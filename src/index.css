@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* 앱 전체 기본 글꼴: Pretendard (font-sans를 덮어써서 모든 텍스트에 적용된다) */
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
 /*
  * 피그마 기준 너비(375px)에서 1rem = 16px.
  * 화면 너비에 비례해 rem이 커지고 작아지며, 너무 작거나 커지지 않도록 14px ~ 20px로 제한한다.
