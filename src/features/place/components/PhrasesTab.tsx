@@ -1,24 +1,39 @@
 import { useState } from "react";
 import type { PlaceDetail } from "../../../api/places";
 import PhraseCard from "../../../components/PhraseCard";
+import { useT } from "../../../contexts/language";
 
 type Mode = "hear" | "say";
 
 // 관광지 상세 "현장 한국어" 탭: 들을 수 있는 말 / 내가 할 말 전환 + 공통 표현 카드.
 // 전환 버튼 아이콘은 반대색 파일이 아직 없어서 빼 두었다.
 export default function PhrasesTab({ detail }: { detail: PlaceDetail }) {
+  const t = useT();
   const [mode, setMode] = useState<Mode>("say");
   const phrases = mode === "say" ? detail.phrasesSay : detail.phrasesHear;
 
   return (
     <div>
       <div className="flex gap-[min(0.25rem,4px)] rounded-[min(0.5rem,8px)] bg-[rgba(43,33,24,0.05)] p-[min(0.25rem,4px)]">
-        <ModeButton label="들을 수 있는 말" sub="You might hear" active={mode === "hear"} onClick={() => setMode("hear")} />
-        <ModeButton label="내가 할 말" sub="What to say back" active={mode === "say"} onClick={() => setMode("say")} />
+        <ModeButton
+          label={t("들을 수 있는 말", "You might hear")}
+          sub={t("You might hear", "들을 수 있는 말")}
+          active={mode === "hear"}
+          onClick={() => setMode("hear")}
+        />
+        <ModeButton
+          label={t("내가 할 말", "What to say back")}
+          sub={t("What to say back", "내가 할 말")}
+          active={mode === "say"}
+          onClick={() => setMode("say")}
+        />
       </div>
 
       <p className="px-[min(0.125rem,2px)] pt-[min(0.75rem,12px)] text-[min(0.75rem,12px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.5)]">
-        그대로 읽거나 화면에 보여주면 통해요. 말이 어려우면 Show to staff 를 눌러 크게 보여주세요.
+        {t(
+          "그대로 읽거나 화면에 보여주면 통해요. 말이 어려우면 Show to staff 를 눌러 크게 보여주세요.",
+          "Read it out or just show the screen. If speaking is hard, tap Show to staff to show it in large text.",
+        )}
       </p>
 
       <div className="flex flex-col gap-[min(0.5rem,8px)] pt-[min(0.75rem,12px)]">

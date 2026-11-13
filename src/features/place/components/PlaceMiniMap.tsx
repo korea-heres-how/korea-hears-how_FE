@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Map, useKakaoLoader } from "react-kakao-maps-sdk";
 import { type Place, toLatLng } from "../../../api/places";
+import { useT } from "../../../contexts/language";
 import PlaceMarker from "../../map/components/PlaceMarker";
 
 const LEVEL = 3;
@@ -8,6 +9,7 @@ const LEVEL = 3;
 // 관광지 상세 "기본 정보" 아래 작은 지도. 장소를 가운데 두고 주황 마커 하나만 보여준다.
 // 화면 스크롤을 방해하지 않게 끌기·확대는 막아 둔다.
 export default function PlaceMiniMap({ place }: { place: Place }) {
+  const t = useT();
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_JS_KEY,
   });
@@ -37,7 +39,7 @@ export default function PlaceMiniMap({ place }: { place: Place }) {
     >
       {error ? (
         <p className="flex size-full items-center justify-center text-[min(0.8125rem,13px)] text-[rgba(43,33,24,0.55)]">
-          지도를 불러오지 못했어요.
+          {t("지도를 불러오지 못했어요.", "Couldn't load the map.")}
         </p>
       ) : loading ? null : (
         <Map

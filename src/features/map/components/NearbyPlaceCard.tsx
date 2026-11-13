@@ -1,6 +1,8 @@
 import type { Place } from "../../../api/places";
 import arrowOrange from "../../../assets/map/arrow-orange.svg";
 import PlaceStatus from "../../../components/PlaceStatus";
+import { useLanguage, useT } from "../../../contexts/language";
+import { useCategoryLabel } from "../../../contexts/labels";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -13,6 +15,11 @@ type NearbyPlaceCardProps = {
 
 // 지도 바텀시트 중간 단계에서 옆으로 넘겨 보는 장소 카드. 사진은 아직 회색 칸.
 export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideClick }: NearbyPlaceCardProps) {
+  const t = useT();
+  const { language } = useLanguage();
+  const categoryLabel = useCategoryLabel();
+  // 큰 이름은 고른 언어, 작은 이름은 다른 언어
+  const [mainTitle, subTitle] = language === "en" ? [place.titleEn, place.title] : [place.title, place.titleEn];
   return (
     // 안에 화살표 버튼이 있어서 카드는 button 대신 div에 버튼 역할을 준다.
     <div
@@ -35,16 +42,16 @@ export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideC
           className="absolute top-[min(0.5rem,8px)] left-[min(0.5rem,8px)] max-w-[calc(100%-min(4.5rem,72px))] text-[min(0.59375rem,9.5px)] leading-[min(0.890625rem,14.25px)] text-[#2B2118]"
         />
         <span className="absolute top-[min(0.5rem,8px)] right-[min(0.5rem,8px)] rounded-full bg-[rgba(251,246,234,0.9)] px-[min(0.5rem,8px)] py-[min(0.125rem,2px)] text-[min(0.59375rem,9.5px)] leading-[min(0.890625rem,14.25px)] text-[#2B2118]">
-          {place.category}
+          {categoryLabel(place.category)}
         </span>
       </div>
 
       <div className="w-full p-[min(0.75rem,12px)]">
         <p className="truncate text-[min(0.875rem,14px)] leading-[min(1.203125rem,19.25px)] font-semibold text-[#2B2118]">
-          {place.title}
+          {mainTitle}
         </p>
         <p className="truncate pt-[min(0.125rem,2px)] text-[min(0.65625rem,10.5px)] leading-[min(0.984375rem,15.75px)] text-[rgba(43,33,24,0.45)]">
-          {place.titleEn}
+          {subTitle}
         </p>
         <div className="mt-[min(0.5rem,8px)] flex h-[min(1.40625rem,22.5px)] items-center justify-between gap-[min(0.5rem,8px)]">
           <span className="truncate text-[min(0.65625rem,10.5px)] leading-[min(0.984375rem,15.75px)] text-[rgba(43,33,24,0.45)]">
@@ -56,7 +63,7 @@ export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideC
               e.stopPropagation();
               onGuideClick();
             }}
-            aria-label={`${place.title} 가이드 보기`}
+            aria-label={t(`${place.title} 가이드 보기`, `View guide for ${place.titleEn}`)}
             className="flex shrink-0 items-center justify-center"
           >
             <img src={arrowOrange} alt="" style={{ width: size(16), height: size(15) }} />

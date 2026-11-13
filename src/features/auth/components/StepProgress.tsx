@@ -1,4 +1,5 @@
 import back from "../../../assets/aichat/back.svg";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -10,6 +11,7 @@ type StepProgressProps = {
 
 // 비밀번호 찾기 / 회원가입 맨 위 "뒤로 · Step n of N · 진행 바"
 export default function StepProgress({ step, total, onBack }: StepProgressProps) {
+  const t = useT();
   return (
     <div className="">
       <div className="flex h-[min(1.40625rem,22.5px)] items-center justify-between">
@@ -19,7 +21,7 @@ export default function StepProgress({ step, total, onBack }: StepProgressProps)
           className="flex items-center gap-[min(0.25rem,4px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[rgba(43,33,24,0.7)]"
         >
           <img src={back} alt="" style={{ width: size(16), height: size(15) }} />
-          뒤로
+          {t("뒤로", "Back")}
         </button>
         <span className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.55)]">
           Step {step} of {total}

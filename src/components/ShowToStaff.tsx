@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import type { Phrase } from "../api/phrases";
 import soundWhiteIcon from "../assets/scan/soundw.svg";
 import closeIcon from "../assets/scan/x-black.svg";
+import { useT } from "../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -14,6 +15,7 @@ type ShowToStaffProps = {
 // "Show to staff"를 누르면 화면 전체에 크게 띄워서 직원·상인에게 보여주는 화면.
 // 카드 바깥(어두운 배경)이나 닫기 버튼을 누르면 닫힌다. 떠 있는 동안 휴대폰 화면이 꺼지지 않게 한다.
 export default function ShowToStaff({ phrase, onClose }: ShowToStaffProps) {
+  const t = useT();
   // 떠 있는 동안 뒤 화면이 같이 스크롤되지 않게 막는다.
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -61,7 +63,7 @@ export default function ShowToStaff({ phrase, onClose }: ShowToStaffProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="직원에게 보여주기"
+      aria-label={t("직원에게 보여주기", "Show to staff")}
       onClick={close}
       className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[rgba(43,33,24,0.92)] px-[min(1.5rem,24px)] text-center"
     >
@@ -93,7 +95,7 @@ export default function ShowToStaff({ phrase, onClose }: ShowToStaffProps) {
             className="flex h-[min(2.515625rem,40.25px)] items-center gap-[min(0.5rem,8px)] rounded-full bg-[#E07A5F] px-[min(1.25rem,20px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[#F1E6D2]"
           >
             <img src={soundWhiteIcon} alt="" style={{ width: size(15), height: size(14) }} />
-            발음 듣기
+            {t("발음 듣기", "Listen")}
           </button>
           <button
             type="button"
@@ -101,13 +103,13 @@ export default function ShowToStaff({ phrase, onClose }: ShowToStaffProps) {
             className="flex h-[min(2.640625rem,42.25px)] items-center gap-[min(0.5rem,8px)] rounded-full border border-[rgba(43,33,24,0.1)] bg-white px-[min(1.25rem,20px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[rgba(43,33,24,0.7)]"
           >
             <img src={closeIcon} alt="" style={{ width: size(15), height: size(14) }} />
-            닫기
+            {t("닫기", "Close")}
           </button>
         </div>
       </div>
 
       <p className="pt-[min(1.25rem,20px)] text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(241,230,210,0.4)]">
-        화면을 누르면 닫혀요
+        {t("화면을 누르면 닫혀요", "Tap anywhere to close")}
       </p>
     </div>,
     document.body,

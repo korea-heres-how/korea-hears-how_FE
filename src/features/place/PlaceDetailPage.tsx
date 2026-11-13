@@ -10,6 +10,8 @@ import back from "../../assets/mypage/back.svg";
 import bookmarkIcon from "../../assets/scan/bookmark.svg";
 import bookmarkFillIcon from "../../assets/scan/bookmark-fill.svg";
 import AiButton from "../../components/AiButton";
+import { useLanguage, useT } from "../../contexts/language";
+import { useCategoryLabel, useStatusLabel, useSubcategoryLabel } from "../../contexts/labels";
 import GuideTab from "./components/GuideTab";
 import InfoTab from "./components/InfoTab";
 import PhrasesTab from "./components/PhrasesTab";
@@ -17,9 +19,9 @@ import PhrasesTab from "./components/PhrasesTab";
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 const TABS = [
-  { key: "guide", label: "행동 가이드", sub: "Action guide" },
-  { key: "phrases", label: "현장 한국어", sub: "Phrases" },
-  { key: "info", label: "기본 정보", sub: "Info" },
+  { key: "guide", label: "행동 가이드", labelEn: "Action guide" },
+  { key: "phrases", label: "현장 한국어", labelEn: "Phrases" },
+  { key: "info", label: "기본 정보", labelEn: "Info" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -28,6 +30,11 @@ type Tab = (typeof TABS)[number]["key"];
 export default function PlaceDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const t = useT();
+  const { language } = useLanguage();
+  const categoryLabel = useCategoryLabel();
+  const subcategoryLabel = useSubcategoryLabel();
+  const statusLabel = useStatusLabel();
   const [detail, setDetail] = useState<PlaceDetail | null>(null);
   const [failed, setFailed] = useState(false);
   const [tab, setTab] = useState<Tab>("guide");
@@ -68,11 +75,14 @@ export default function PlaceDetailPage() {
   if (failed) {
     return (
       <p className="px-[min(1rem,16px)] py-[min(3rem,48px)] text-center text-[min(0.8125rem,13px)] text-[rgba(43,33,24,0.45)]">
-        장소 정보를 불러오지 못했어요.
+        {t("장소 정보를 불러오지 못했어요.", "Couldn't load this place.")}
       </p>
     );
   }
   if (!detail) return null;
+
+  // 큰 이름은 고른 언어, 작은 이름은 다른 언어
+  const [mainTitle, subTitle] = language === "en" ? [detail.titleEn, detail.title] : [detail.title, detail.titleEn];
 
   return (
     <div className="pb-[min(5rem,80px)]">
@@ -85,7 +95,7 @@ export default function PlaceDetailPage() {
           <button
             type="button"
             onClick={goBack}
-            aria-label="뒤로 가기"
+            aria-label={t("뒤로 가기", "Go back")}
             className="flex size-[min(2.5rem,40px)] items-center justify-center rounded-full bg-[rgba(255,255,255,0.9)] backdrop-blur-[4px]"
           >
             <img src={back} alt="" style={{ width: size(19), height: size(18) }} />
@@ -93,7 +103,7 @@ export default function PlaceDetailPage() {
           <button
             type="button"
             onClick={toggleFavorite}
-            aria-label={favorite ? "즐겨찾기 해제" : "즐겨찾기"}
+            aria-label={favorite ? t("즐겨찾기 해제", "Remove from favorites") : t("즐겨찾기", "Add to favorites")}
             aria-pressed={favorite}
             className={`flex size-[min(2.5rem,40px)] items-center justify-center rounded-full backdrop-blur-[4px] ${
               favorite ? "bg-[#E07A5F]" : "bg-[rgba(255,255,255,0.9)]"
@@ -110,13 +120,13 @@ export default function PlaceDetailPage() {
         <div className="absolute inset-x-[min(1rem,16px)] bottom-[min(1rem,16px)]">
           <span className="inline-flex items-center gap-[min(0.375rem,6px)] rounded-full border border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.15)] px-[min(0.75rem,12px)] py-[min(0.25rem,4px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] tracking-[0.05em] text-[#F1E6D2] backdrop-blur-[4px]">
             <span className="size-[min(0.375rem,6px)] rounded-full bg-[#F1E6D2]" />
-            {detail.category} · {detail.subcategory}
+            {categoryLabel(detail.category)} · {subcategoryLabel(detail.subcategory)}
           </span>
           <h1 className="pt-[min(0.5rem,8px)] text-[min(1.625rem,26px)] leading-[min(2.03rem,32.5px)] font-semibold tracking-[-0.025em] text-[#F1E6D2]">
-            {detail.title}
+            {mainTitle}
           </h1>
           <p className="pt-[min(0.125rem,2px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[rgba(241,230,210,0.8)]">
-            {detail.titleEn}
+            {subTitle}
           </p>
         </div>
       </div>
@@ -126,11 +136,11 @@ export default function PlaceDetailPage() {
         <div className="flex flex-wrap gap-[min(0.5rem,8px)] pt-[min(0.875rem,14px)]">
           <Chip>
             <span className={`size-[min(0.5rem,8px)] rounded-full ${detail.busy ? "bg-[#E07A5F]" : "bg-[#A9BBA0]"}`} />
-            {detail.status}
+            {statusLabel(detail.status)}
           </Chip>
           <Chip>
             <img src={walk} alt="" style={{ width: size(13), height: size(12) }} />
-            {formatDistance(detail)}
+            {formatDistance(detail, language)}
           </Chip>
           <Chip>
             <img src={notice} alt="" style={{ width: size(13), height: size(12) }} />
@@ -145,17 +155,17 @@ export default function PlaceDetailPage() {
         {/* 여기서는? 이것만 기억하세요 */}
         <section className="pt-[min(1rem,16px)]">
           <p className="pb-[min(0.5rem,8px)] text-[min(0.625rem,10px)] leading-[min(0.9375rem,15px)] font-medium tracking-[0.16em] text-[rgba(224,122,95,0.8)]">
-            여기서는? · What should I know here
+            {t("여기서는? · What should I know here", "What should I know here · 여기서는?")}
           </p>
           <div className="rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] bg-white p-[min(1rem,16px)]">
             <div className="flex gap-[min(0.625rem,10px)]">
               <span className="mt-[min(0.25rem,4px)] h-[min(1rem,16px)] w-[min(0.25rem,4px)] shrink-0 rounded-full bg-[#E07A5F]" />
               <div>
                 <h2 className="text-[min(1rem,16px)] leading-[min(1.25rem,20px)] font-semibold text-[#2B2118]">
-                  {detail.title}에서 이것만 기억하세요
+                  {t(`${detail.title}에서 이것만 기억하세요`, `The 3 things to remember at ${detail.titleEn}`)}
                 </h2>
                 <p className="pt-[min(0.25rem,4px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.45)]">
-                  The 3 things to remember here
+                  {t("The 3 things to remember here", `${detail.title}에서 이것만 기억하세요`)}
                 </p>
               </div>
             </div>
@@ -167,9 +177,11 @@ export default function PlaceDetailPage() {
                     i === detail.remember.length - 1 ? "pb-0" : ""
                   }`}
                 >
-                  <p className="text-[min(0.8125rem,13px)] leading-[min(1.117rem,17.875px)] text-[#2B2118]">{text}</p>
+                  <p className="text-[min(0.8125rem,13px)] leading-[min(1.117rem,17.875px)] text-[#2B2118]">
+                    {t(text, textEn)}
+                  </p>
                   <p className="pt-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(0.9453rem,15.125px)] text-[rgba(43,33,24,0.45)]">
-                    {textEn}
+                    {t(textEn, text)}
                   </p>
                 </li>
               ))}
@@ -179,7 +191,7 @@ export default function PlaceDetailPage() {
 
         {/* 탭 */}
         <div className="mt-[min(1.25rem,20px)] flex border-b border-[rgba(43,33,24,0.1)]">
-          {TABS.map(({ key, label, sub }) => {
+          {TABS.map(({ key, label, labelEn }) => {
             const active = key === tab;
             return (
               <button
@@ -194,14 +206,14 @@ export default function PlaceDetailPage() {
                     active ? "text-[#E07A5F]" : "text-[rgba(43,33,24,0.45)]"
                   }`}
                 >
-                  {label}
+                  {t(label, labelEn)}
                 </span>
                 <span
                   className={`pt-[min(0.25rem,4px)] text-[min(0.625rem,10px)] leading-[min(0.625rem,10px)] ${
                     active ? "text-[rgba(224,122,95,0.6)]" : "text-[rgba(43,33,24,0.3)]"
                   }`}
                 >
-                  {sub}
+                  {t(labelEn, label)}
                 </span>
                 {active && (
                   <span className="absolute inset-x-[min(0.5rem,8px)] -bottom-px h-[2px] rounded-full bg-[#E07A5F]" />
@@ -224,13 +236,16 @@ export default function PlaceDetailPage() {
           </span>
           <div>
             <h3 className="text-[min(0.9375rem,15px)] leading-[min(1.40625rem,22.5px)] font-semibold text-[#2B2118]">
-              여기서 아직 헷갈리나요?
+              {t("여기서 아직 헷갈리나요?", "Still unsure about something here?")}
             </h3>
             <p className="pt-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.45)]">
-              Still unsure about something here?
+              {t("Still unsure about something here?", "여기서 아직 헷갈리나요?")}
             </p>
             <p className="pt-[min(0.25rem,4px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[rgba(43,33,24,0.6)]">
-              팁, 쟁반, 자리 같은 것까지 AI 여행 도우미에게 물어보세요.
+              {t(
+                "팁, 쟁반, 자리 같은 것까지 AI 여행 도우미에게 물어보세요.",
+                "Ask the AI travel assistant anything — even about tips, trays, or seating.",
+              )}
             </p>
           </div>
           <button
@@ -239,7 +254,7 @@ export default function PlaceDetailPage() {
             className="flex h-[min(2.21875rem,35.5px)] items-center gap-[min(0.375rem,6px)] rounded-full bg-[#E07A5F] px-[min(1rem,16px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-medium text-[#F1E6D2]"
           >
             <img src={ai} alt="" style={{ width: size(14), height: size(13) }} />
-            AI에게 묻기
+            {t("AI에게 묻기", "Ask AI")}
           </button>
         </div>
       </div>

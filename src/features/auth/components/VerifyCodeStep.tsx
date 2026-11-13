@@ -3,6 +3,7 @@ import { InvalidCodeError } from "../../../api/auth";
 import findPwd from "../../../assets/auth/find-pwd.svg";
 import notice from "../../../assets/auth/notice.svg";
 import timer from "../../../assets/auth/timer.svg";
+import { useT } from "../../../contexts/language";
 import AuthField from "./AuthField";
 import {
   descriptionClassName,
@@ -37,8 +38,22 @@ export default function VerifyCodeStep({
   onVerify,
   onResend,
 }: VerifyCodeStepProps) {
+  const t = useT();
   const [code, setCode] = useState("");
-  const [error, setError] = useState("");
+  // 오류 종류만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
+  const [error, setError] = useState<"" | "expired" | "short" | "wrong">("");
+  const errorMessage = {
+    "": "",
+    expired: t(
+      "인증 시간이 만료되었어요. 인증번호를 다시 보내주세요.",
+      "The code has expired. Please request a new one.",
+    ),
+    short: t("인증번호 4~6자리를 입력해주세요.", "Please enter the 4–6 digit code."),
+    wrong: t(
+      "인증번호가 올바르지 않아요. 다시 확인해주세요.",
+      "That code isn't correct. Please check it again.",
+    ),
+  }[error];
   const [loading, setLoading] = useState(false);
   const [remaining, setRemaining] = useState(CODE_TTL_SECONDS);
   const expired = remaining <= 0;
@@ -51,14 +66,14 @@ export default function VerifyCodeStep({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (expired) return setError("인증 시간이 만료되었어요. 인증번호를 다시 보내주세요.");
-    if (code.length < 4) return setError("인증번호 4~6자리를 입력해주세요.");
+    if (expired) return setError("expired");
+    if (code.length < 4) return setError("short");
     setLoading(true);
     try {
       await onVerify(code);
     } catch (e) {
       // 그 밖의 실패 안내는 FindPasswordPage가 위쪽 팝업으로 보여준다.
-      if (e instanceof InvalidCodeError) setError("인증번호가 올바르지 않아요. 다시 확인해주세요.");
+      if (e instanceof InvalidCodeError) setError("wrong");
     } finally {
       setLoading(false);
     }
@@ -80,8 +95,11 @@ export default function VerifyCodeStep({
       <div className="mx-auto flex size-[min(3.5rem,56px)] items-center justify-center rounded-full bg-[#E07A5F]">
         <img src={findPwd} alt="" style={{ width: size(28), height: size(26) }} />
       </div>
-      <h1 className={`pt-[min(1.25rem,20px)] ${stepTitleClassName}`}>이메일을 확인해주세요</h1>
-      <p className={stepSubtitleClassName}>Verify your email</p>
+      {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
+      <h1 className={`pt-[min(1.25rem,20px)] ${stepTitleClassName}`}>
+        {t("이메일을 확인해주세요", "Verify your email")}
+      </h1>
+      <p className={stepSubtitleClassName}>{t("Verify your email", "이메일을 확인해주세요")}</p>
       <p className={`pt-[min(0.75rem,12px)] ${descriptionClassName}`}>{description}</p>
 
       <div className="pt-[min(1rem,16px)]">
@@ -92,8 +110,8 @@ export default function VerifyCodeStep({
 
       <form onSubmit={handleSubmit} noValidate className="pt-[min(1rem,16px)] text-left">
         <AuthField
-          label="인증번호 · Verification code"
-          error={error}
+          label={t("인증번호 · Verification code", "Verification code")}
+          error={errorMessage}
           aside={
             // 시간이 다 되면 빨간 칩으로 바뀐다.
             <span
@@ -133,7 +151,7 @@ export default function VerifyCodeStep({
         </AuthField>
         <div className="pt-[min(0.75rem,12px)]">
           <button type="submit" disabled={loading} className={primaryButtonClassName}>
-            인증하기
+            {t("인증하기", "Verify")}
           </button>
         </div>
         <div className="flex justify-center pt-[min(0.75rem,12px)]">
@@ -142,7 +160,7 @@ export default function VerifyCodeStep({
             onClick={handleResend}
             className="text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] font-medium text-[rgba(43,33,24,0.75)] underline"
           >
-            인증번호 다시 보내기
+            {t("인증번호 다시 보내기", "Resend code")}
           </button>
         </div>
       </form>

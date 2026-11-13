@@ -11,6 +11,7 @@ import {
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
 import PlaceListCard from "../../components/PlaceListCard";
+import { useLanguage, useT } from "../../contexts/language";
 import BottomSheet from "./components/BottomSheet";
 import Header, { type Category } from "./components/header";
 import KakaoMap from "./components/KakaoMap";
@@ -23,6 +24,8 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 export default function MapPage() {
   const navigate = useNavigate();
+  const t = useT();
+  const { language } = useLanguage();
   const myLocation = useMyLocation();
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
   // 따라가기 모드: 현재 위치 버튼을 누르면 켜지고, 지도를 끌면 꺼진다.
@@ -136,9 +139,9 @@ export default function MapPage() {
               <PlaceMarker
                 key={place.contentid}
                 position={position}
-                name={place.title}
+                name={language === "en" ? place.titleEn : place.title}
                 // [임시] 거리는 더미 고정 값. 서버 연결 후 내 위치로 계산한다.
-                distanceText={formatDistance(place)}
+                distanceText={formatDistance(place, language)}
                 selected={place.contentid === selectedId}
                 onClick={() => setSelectedId(place.contentid)}
               />
@@ -155,7 +158,7 @@ export default function MapPage() {
               onClick={() => navigate("/list")}
               className="flex items-center gap-[min(0.25rem,4px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[#E07A5F]"
             >
-              전체 보기
+              {t("전체 보기", "View all")}
               <img
                 src={arrowOrange}
                 alt=""
@@ -177,7 +180,7 @@ export default function MapPage() {
                   tip={place.tip}
                   imageUrl={place.imageUrl}
                   distanceText={formatKm(place)}
-                  walkText={formatWalk(place)}
+                  walkText={formatWalk(place, language)}
                   onClick={() => selectFromCard(place)}
                   onGuideClick={() => navigate(`/place/${place.contentid}`)}
                 />
@@ -200,18 +203,26 @@ export default function MapPage() {
               <NearbyPlaceCard
                 key={place.contentid}
                 place={place}
-                distanceText={formatDistance(place)}
+                distanceText={formatDistance(place, language)}
                 onClick={() => selectFromCard(place)}
                 onGuideClick={() => navigate(`/place/${place.contentid}`)}
               />
             ))}
           </div>
           <p className="px-[min(1rem,16px)] pt-[min(0.5rem,8px)] text-center text-[min(0.6875rem,11px)] leading-[min(0.9453rem,15.125px)] text-[rgba(43,33,24,0.45)]">
-            카드를 누르면{" "}
-            <span className="font-medium text-[rgba(43,33,24,0.7)]">
-              “여기서 어떻게 행동하는지”
-            </span>{" "}
-            볼 수 있어요.
+            {t(
+              <>
+                카드를 누르면{" "}
+                <span className="font-medium text-[rgba(43,33,24,0.7)]">
+                  “여기서 어떻게 행동하는지”
+                </span>{" "}
+                볼 수 있어요.
+              </>,
+              <>
+                Tap a card to see{" "}
+                <span className="font-medium text-[rgba(43,33,24,0.7)]">“how to act here.”</span>
+              </>,
+            )}
           </p>
         </BottomSheet>
       </div>

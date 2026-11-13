@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import sendOff from "../../../assets/aichat/send-off.svg";
 import sendOn from "../../../assets/aichat/send-on.svg";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -11,6 +12,7 @@ type ChatInputProps = {
 };
 
 export default function ChatInput({ onSend, sendDisabled }: ChatInputProps) {
+  const t = useT();
   const [text, setText] = useState("");
   const hasText = text.trim() !== "";
   const canSend = hasText && !sendDisabled;
@@ -29,15 +31,15 @@ export default function ChatInput({ onSend, sendDisabled }: ChatInputProps) {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="팁, 쟁반, 지하철, 카페 무엇이든 물어보세요"
-            aria-label="질문 입력"
+            placeholder={t("팁, 쟁반, 지하철, 카페 무엇이든 물어보세요", "Ask about tips, trays, the subway, cafés…")}
+            aria-label={t("질문 입력", "Your question")}
             className="min-w-0 flex-1 bg-transparent px-[min(0.5rem,8px)] text-[min(0.875rem,14px)] leading-[min(1.25rem,20px)] text-[#2B2118] outline-none placeholder:text-[rgba(43,33,24,0.4)]"
           />
           {/* 글씨가 있고 답변 중이 아닐 때만 진하게(보낼 수 있게) 바뀐다. */}
           <button
             type="submit"
             disabled={!canSend}
-            aria-label="보내기"
+            aria-label={t("보내기", "Send")}
             className={`flex size-[min(2.25rem,36px)] shrink-0 items-center justify-center rounded-[min(0.75rem,12px)] bg-[#E07A5F] disabled:cursor-default ${
               canSend ? "" : "opacity-40"
             }`}
@@ -50,7 +52,10 @@ export default function ChatInput({ onSend, sendDisabled }: ChatInputProps) {
           </button>
         </div>
         <p className="pt-[min(0.5rem,8px)] text-center text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.4)]">
-          데모 도우미 — 실제 AI 가이드가 답하는 방식의 예시예요.
+          {t(
+            "데모 도우미 — 실제 AI 가이드가 답하는 방식의 예시예요.",
+            "Demo assistant — an example of how the real AI guide answers.",
+          )}
         </p>
       </form>
     </div>

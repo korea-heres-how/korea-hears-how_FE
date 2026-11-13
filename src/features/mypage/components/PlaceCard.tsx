@@ -1,13 +1,19 @@
 import type { FavoritePlace } from "../../../api/mypage";
 import arrow from "../../../assets/mypage/arrow-g.svg";
+import { useLanguage } from "../../../contexts/language";
+import { useCategoryLabel } from "../../../contexts/labels";
 import Thumbnail from "./Thumbnail";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 // 즐겨찾기한 장소 카드 한 개. 누르면 상세로 가는 건 나중에 연결한다.
 export default function PlaceCard({ place }: { place: FavoritePlace }) {
+  const { language } = useLanguage();
+  const categoryLabel = useCategoryLabel();
+  // 큰 이름은 고른 언어, 작은 이름은 다른 언어
+  const [mainName, subName] = language === "en" ? [place.nameEn, place.name] : [place.name, place.nameEn];
   const meta = [
-    place.category,
+    categoryLabel(place.category),
     place.distanceM !== undefined && `${(place.distanceM / 1000).toFixed(1)} km`,
   ]
     .filter(Boolean)
@@ -21,10 +27,10 @@ export default function PlaceCard({ place }: { place: FavoritePlace }) {
       <Thumbnail src={place.imageUrl} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[min(0.875rem,14px)] leading-[min(1.3125rem,21px)] font-semibold text-[#2B2118]">
-          {place.name}
+          {mainName}
         </p>
         <p className="truncate text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.45)]">
-          {place.nameEn}
+          {subName}
         </p>
         <p className="truncate pt-[min(0.125rem,2px)] text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.55)]">
           {meta}

@@ -1,16 +1,22 @@
 import type { ScannedSign } from "../../../api/mypage";
 import arrow from "../../../assets/mypage/arrow-g.svg";
+import { type Language, useLanguage } from "../../../contexts/language";
 import Thumbnail from "./Thumbnail";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
-function formatDate(iso: string) {
+// "11월 13일" / "Nov 13"
+function formatDate(iso: string, language: Language) {
   const date = new Date(iso);
+  if (language === "en") return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 // 스캔한 안내문 카드 한 개. 누르면 상세로 가는 건 나중에 연결한다.
 export default function SignCard({ sign }: { sign: ScannedSign }) {
+  const { language } = useLanguage();
+  // 큰 제목은 고른 언어, 작은 제목은 다른 언어
+  const [mainTitle, subTitle] = language === "en" ? [sign.titleEn, sign.title] : [sign.title, sign.titleEn];
   return (
     <button
       type="button"
@@ -19,13 +25,13 @@ export default function SignCard({ sign }: { sign: ScannedSign }) {
       <Thumbnail src={sign.imageUrl} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[min(0.875rem,14px)] leading-[min(1.3125rem,21px)] font-semibold text-[#2B2118]">
-          {sign.title}
+          {mainTitle}
         </p>
         <p className="truncate text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.45)]">
-          {sign.titleEn}
+          {subTitle}
         </p>
         <p className="truncate pt-[min(0.125rem,2px)] text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.55)]">
-          {formatDate(sign.scannedAt)}
+          {formatDate(sign.scannedAt, language)}
         </p>
         <p className="truncate pt-[min(0.125rem,2px)] text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.45)]">
           {sign.description}

@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import apple from "../../../assets/auth/apple.svg";
 import google from "../../../assets/auth/google.svg";
+import { useT } from "../../../contexts/language";
 import AuthField from "./AuthField";
 import {
   inputClassName,
@@ -22,29 +23,43 @@ type EmailStepProps = {
 
 // 로그인 1단계: 이메일 입력
 export default function EmailStep({ initialEmail, onNext }: EmailStepProps) {
+  const t = useT();
   const [email, setEmail] = useState(initialEmail);
-  const [error, setError] = useState("");
+  // 오류 종류만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
+  const [error, setError] = useState<"" | "empty" | "invalid">("");
+  const errorMessage =
+    error === "empty"
+      ? t("이메일을 입력해주세요.", "Please enter your email.")
+      : error === "invalid"
+        ? t("올바른 이메일 형식이 아니에요.", "Please enter a valid email address.")
+        : "";
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const value = email.trim();
-    if (!value) return setError("이메일을 입력해주세요.");
-    if (!EMAIL_PATTERN.test(value)) return setError("올바른 이메일 형식이 아니에요.");
+    if (!value) return setError("empty");
+    if (!EMAIL_PATTERN.test(value)) return setError("invalid");
     onNext(value);
   };
 
   return (
     <div>
-      <h1 className={titleClassName}>다시 만나서 반가워요</h1>
-      <p className={subtitleClassName}>Welcome back</p>
+      {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
+      <h1 className={titleClassName}>{t("다시 만나서 반가워요", "Welcome back")}</h1>
+      <p className={subtitleClassName}>{t("Welcome back", "다시 만나서 반가워요")}</p>
       <p className="pt-[min(0.75rem,12px)] text-[min(0.875rem,14px)] leading-[min(1.421875rem,22.75px)] text-[rgba(43,33,24,0.9)]">
-        이메일을 입력하면 다음 단계에서
-        <br />
-        비밀번호를 입력할 수 있어요.
+        {t(
+          <>
+            이메일을 입력하면 다음 단계에서
+            <br />
+            비밀번호를 입력할 수 있어요.
+          </>,
+          "Enter your email, then you can enter your password on the next step.",
+        )}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="pt-[min(1.75rem,28px)]">
-        <AuthField label="이메일 · Email" error={error}>
+        <AuthField label={t("이메일 · Email", "Email")} error={errorMessage}>
           <input
             type="email"
             value={email}
@@ -60,7 +75,7 @@ export default function EmailStep({ initialEmail, onNext }: EmailStepProps) {
         </AuthField>
         <div className="pt-[min(1rem,16px)]">
           <button type="submit" className={primaryButtonClassName}>
-            다음
+            {t("다음", "Next")}
           </button>
         </div>
       </form>
@@ -68,7 +83,7 @@ export default function EmailStep({ initialEmail, onNext }: EmailStepProps) {
       <div className="flex items-center gap-[min(0.75rem,12px)] py-[min(1.25rem,20px)]">
         <span className="h-px flex-1 bg-[rgba(43,33,24,0.1)]" />
         <span className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.7)]">
-          또는
+          {t("또는", "or")}
         </span>
         <span className="h-px flex-1 bg-[rgba(43,33,24,0.1)]" />
       </div>
@@ -77,16 +92,16 @@ export default function EmailStep({ initialEmail, onNext }: EmailStepProps) {
       <div className="flex flex-col gap-[min(0.625rem,10px)]">
         <SocialButton
           icon={google}
-          label="Google로 계속하기"
-          sub="Continue with Google"
+          label={t("Google로 계속하기", "Continue with Google")}
+          sub={t("Continue with Google", "Google 계정으로")}
           className="h-[min(3rem,48px)] border border-[rgba(43,33,24,0.1)] bg-white"
           labelClassName="text-[#2B2118]"
           subClassName="text-[rgba(43,33,24,0.7)]"
         />
         <SocialButton
           icon={apple}
-          label="Apple로 계속하기"
-          sub="Continue with Apple"
+          label={t("Apple로 계속하기", "Continue with Apple")}
+          sub={t("Continue with Apple", "Apple 계정으로")}
           className="h-[min(2.875rem,46px)] bg-[#2B2118]"
           labelClassName="text-[#F1E6D2]"
           subClassName="text-[rgba(241,230,210,0.6)]"

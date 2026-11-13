@@ -3,6 +3,7 @@ import { type SignExplanation, sendScanFeedback } from "../../../api/scan";
 import closeIcon from "../../../assets/scan/x-black.svg";
 import Feedback from "../../../components/Feedback";
 import PhraseCard from "../../../components/PhraseCard";
+import { useLanguage, useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -14,6 +15,12 @@ type ResultModalProps = {
 // "안내문 해석하기"를 누르면 scan 화면 위에 뜨는 해석 결과 팝업.
 // X 버튼이나 어두운 배경을 누르면 닫힌다.
 export default function ResultModal({ result, onClose }: ResultModalProps) {
+  const t = useT();
+  const { language } = useLanguage();
+  // 뜻 설명은 큰 글씨를 고른 언어로, 작은 글씨를 다른 언어로 보여준다.
+  // (안내문 원문 title은 실제 한국어 안내문이라 언어와 상관없이 크게 그대로 둔다.)
+  const [meaning, meaningSub] =
+    language === "en" ? [result.meaningEn, result.meaning] : [result.meaning, result.meaningEn];
   // 팝업이 떠 있는 동안 뒤 화면이 같이 스크롤되지 않게 막는다.
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -27,7 +34,7 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="안내문 해석 결과"
+      aria-label={t("안내문 해석 결과", "Sign explanation")}
       onClick={onClose}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(43,33,24,0.5)] p-[min(1rem,16px)]"
     >
@@ -41,11 +48,11 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
             <Section>
               <div className="flex items-start gap-[min(0.625rem,10px)]">
                 <Badge>1</Badge>
-                <h3 className={`min-w-0 flex-1 ${TITLE_CLASS}`}>이 안내문의 뜻</h3>
+                <h3 className={`min-w-0 flex-1 ${TITLE_CLASS}`}>{t("이 안내문의 뜻", "What this sign means")}</h3>
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="닫기"
+                  aria-label={t("닫기", "Close")}
                   className="flex size-[min(2rem,32px)] shrink-0 items-center justify-center rounded-full border border-[rgba(43,33,24,0.1)] bg-white"
                 >
                   <img src={closeIcon} alt="" style={{ width: size(15), height: size(14) }} />
@@ -60,16 +67,20 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
                 </p>
               </div>
               <p className="pt-[min(0.75rem,12px)] text-[min(0.90625rem,14.5px)] leading-[min(1.47rem,23.563px)] text-[rgba(43,33,24,0.8)]">
-                {result.meaning}
+                {meaning}
               </p>
               <p className="pt-[min(0.375rem,6px)] text-[min(0.78125rem,12.5px)] leading-[min(1.27rem,20.313px)] text-[rgba(43,33,24,0.45)]">
-                {result.meaningEn}
+                {meaningSub}
               </p>
             </Section>
 
             {/* 2. 그래서 어떻게 해야 하나요? */}
             <Section className="bg-[rgba(224,122,95,0.06)]">
-              <SectionTitle number={2} title="그래서 어떻게 해야 하나요?" sub="What should you do?" />
+              <SectionTitle
+                number={2}
+                title={t("그래서 어떻게 해야 하나요?", "What should you do?")}
+                sub={t("What should you do?", "그래서 어떻게 해야 하나요?")}
+              />
               <p className="pt-[min(0.75rem,12px)] text-[min(0.9375rem,15px)] leading-[min(1.5234375rem,24.375px)] font-medium text-[rgba(43,33,24,0.85)]">
                 {result.action}
               </p>
@@ -77,7 +88,11 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
 
             {/* 3. 이렇게 말해보세요 */}
             <Section>
-              <SectionTitle number={3} title="이렇게 말해보세요" sub="Try saying this" />
+              <SectionTitle
+                number={3}
+                title={t("이렇게 말해보세요", "Try saying this")}
+                sub={t("Try saying this", "이렇게 말해보세요")}
+              />
               <div className="flex flex-col gap-[min(0.75rem,12px)] pt-[min(0.875rem,14px)]">
                 {result.phrases.map((phrase) => (
                   <PhraseCard key={phrase.id} phrase={phrase} />
@@ -89,10 +104,10 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
             <div className="p-[min(1.25rem,20px)]">
               <p className="flex flex-wrap items-baseline gap-x-[min(0.375rem,6px)] tracking-[0.05em]">
                 <span className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.45)]">
-                  이런 곳에서 볼 수 있어요
+                  {t("이런 곳에서 볼 수 있어요", "Where you may see this")}
                 </span>
                 <span className="text-[min(0.625rem,10px)] leading-[min(0.9375rem,15px)] text-[rgba(43,33,24,0.35)]">
-                  Where you may see this
+                  {t("Where you may see this", "이런 곳에서 볼 수 있어요")}
                 </span>
               </p>
               <p className="pt-[min(0.25rem,4px)] text-[min(0.84375rem,13.5px)] leading-[min(1.16rem,18.563px)] text-[rgba(43,33,24,0.7)]">

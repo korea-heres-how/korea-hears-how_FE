@@ -1,31 +1,25 @@
 import { useState } from "react";
 import languageIcon from "../../../assets/map/language.svg";
 import logo from "../../../assets/map/logo.svg";
-
-export type Language = "EN" | "KOR";
+import { useLanguage } from "../../../contexts/language";
+import { useCategoryLabel } from "../../../contexts/labels";
 
 const CATEGORIES = ["전체", "관광지", "문화시설", "음식점", "시장", "카페"] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 type HeaderProps = {
-  onLanguageChange?: (language: Language) => void;
   onCategoryChange?: (category: Category) => void;
 };
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
-export default function Header({
-  onLanguageChange,
-  onCategoryChange,
-}: HeaderProps) {
-  const [language, setLanguage] = useState<Language>("EN");
+export default function Header({ onCategoryChange }: HeaderProps) {
+  // 언어는 앱 전체 공통 값(로그인 헤더, 마이페이지 토글과 같이 바뀐다).
+  const { language, setLanguage } = useLanguage();
+  const categoryLabel = useCategoryLabel();
   const [category, setCategory] = useState<Category>("전체");
 
-  const toggleLanguage = () => {
-    const next = language === "EN" ? "KOR" : "EN";
-    setLanguage(next);
-    onLanguageChange?.(next);
-  };
+  const toggleLanguage = () => setLanguage(language === "ko" ? "en" : "ko");
 
   const selectCategory = (next: Category) => {
     setCategory(next);
@@ -57,7 +51,7 @@ export default function Header({
         <button
           type="button"
           onClick={toggleLanguage}
-          aria-label={language === "EN" ? "한국어로 변경" : "Switch to English"}
+          aria-label={language === "en" ? "한국어로 변경" : "Switch to English"}
           className="flex h-[min(2rem,32px)] items-center gap-[min(0.375rem,6px)] rounded-full border border-[rgba(43,33,24,0.15)] bg-[rgba(43,33,24,0.05)] px-[min(0.8125rem,13px)] text-[min(0.75rem,12px)] font-medium leading-[min(1.125rem,18px)] text-[rgba(43,33,24,0.7)]"
         >
           <img
@@ -65,7 +59,7 @@ export default function Header({
             alt=""
             style={{ width: size(15), height: size(14) }}
           />
-          {language}
+          {language === "en" ? "EN" : "KOR"}
         </button>
       </div>
 
@@ -84,7 +78,7 @@ export default function Header({
                   : "font-normal text-[rgba(43,33,24,0.55)]"
               }`}
             >
-              {item}
+              {categoryLabel(item)}
               {isActive && (
                 <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[#E07A5F]" />
               )}

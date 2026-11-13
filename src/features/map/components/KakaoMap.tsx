@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { CustomOverlayMap, Map, useKakaoLoader } from "react-kakao-maps-sdk";
+import { useT } from "../../../contexts/language";
 import type { LatLng, MyLocationState } from "./useMyLocation";
 
 const DEFAULT_LEVEL = 2;
@@ -23,6 +24,7 @@ export default function KakaoMap({
   onIdle,
   children,
 }: KakaoMapProps) {
+  const t = useT();
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_JS_KEY,
   });
@@ -35,10 +37,10 @@ export default function KakaoMap({
   }
 
   if (error) {
-    return <MapMessage>지도를 불러오지 못했어요.</MapMessage>;
+    return <MapMessage>{t("지도를 불러오지 못했어요.", "Couldn't load the map.")}</MapMessage>;
   }
   if (loading || center === null) {
-    return <MapMessage>지도를 불러오는 중이에요…</MapMessage>;
+    return <MapMessage>{t("지도를 불러오는 중이에요…", "Loading the map…")}</MapMessage>;
   }
 
   return (
@@ -66,10 +68,11 @@ export default function KakaoMap({
 }
 
 function MyLocationDot() {
+  const t = useT();
   return (
     <span
       className="relative flex size-[22px] items-center justify-center"
-      aria-label="내 위치"
+      aria-label={t("내 위치", "My location")}
     >
       <span className="absolute inset-0 rounded-full bg-[#3B82F6]/25" />
       <span className="relative size-[14px] rounded-full border-[2.5px] border-white bg-[#3B82F6] shadow-[0_1px_4px_rgba(0,0,0,0.3)]" />

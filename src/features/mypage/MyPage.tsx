@@ -20,6 +20,7 @@ import scan from "../../assets/mypage/scan.svg";
 import AiButton from "../../components/AiButton";
 import LanguageSelect from "../../components/LanguageSelect";
 import { useAuth } from "../../contexts/auth";
+import { useT } from "../../contexts/language";
 import EditProfileModal from "./components/EditProfileModal";
 import PlaceCard from "./components/PlaceCard";
 import ProfileAvatar from "./components/ProfileAvatar";
@@ -33,6 +34,7 @@ const PREVIEW_COUNT = 3;
 // 프로필 수정·전체 보기·오프라인 표현 보관함 외에 다른 화면으로 넘어가는 버튼들은 아직 동작 없이 모양만 있다.
 export default function MyPage() {
   const navigate = useNavigate();
+  const t = useT();
   const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [favorites, setFavorites] = useState<FavoritePlace[]>([]);
@@ -58,10 +60,11 @@ export default function MyPage() {
     <div className="px-[min(1rem,16px)] pt-[min(1.5rem,24px)] pb-[min(5rem,80px)]">
       <header className="pb-[min(1.25rem,20px)]">
         <h1 className="text-[min(1.625rem,26px)] leading-[min(2.03rem,32.5px)] font-bold tracking-[-0.025em] text-[#2B2118]">
-          마이페이지
+          {t("마이페이지", "My Page")}
         </h1>
+        {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
         <p className="pt-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(0.86rem,13.75px)] text-[rgba(43,33,24,0.45)]">
-          My Page
+          {t("My Page", "마이페이지")}
         </p>
       </header>
 
@@ -85,8 +88,8 @@ export default function MyPage() {
         </div>
         <SettingRow
           icon={edit}
-          title="프로필 수정"
-          sub="Edit profile"
+          title={t("프로필 수정", "Edit profile")}
+          sub={t("Edit profile", "프로필 수정")}
           bordered
           onClick={() => profile && setEditing(true)}
         >
@@ -96,8 +99,18 @@ export default function MyPage() {
 
       {/* 개수 */}
       <div className="grid grid-cols-2 gap-[min(0.625rem,10px)] pt-[min(1rem,16px)]">
-        <StatCard icon={bookmark} count={favorites.length} label="즐겨찾기" sub="Favorites" />
-        <StatCard icon={scan} count={signs.length} label="스캔한 안내문" sub="Scanned signs" />
+        <StatCard
+          icon={bookmark}
+          count={favorites.length}
+          label={t("즐겨찾기", "Favorites")}
+          sub={t("Favorites", "즐겨찾기")}
+        />
+        <StatCard
+          icon={scan}
+          count={signs.length}
+          label={t("스캔한 안내문", "Scanned signs")}
+          sub={t("Scanned signs", "스캔한 안내문")}
+        />
       </div>
 
       {/* 오프라인 표현 보관함 */}
@@ -113,14 +126,17 @@ export default function MyPage() {
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-x-[min(0.375rem,6px)]">
               <span className="text-[min(0.90625rem,14.5px)] leading-[min(1.359rem,21.75px)] font-semibold text-[#2B2118]">
-                오프라인 표현 보관함
+                {t("오프라인 표현 보관함", "Offline Phrasebook")}
               </span>
               <span className="text-[min(0.625rem,10px)] leading-[min(0.9375rem,15px)] text-[rgba(43,33,24,0.4)]">
-                Offline Phrasebook
+                {t("Offline Phrasebook", "오프라인 표현 보관함")}
               </span>
             </span>
             <span className="block pt-[min(0.125rem,2px)] text-[min(0.71875rem,11.5px)] leading-[min(0.988rem,15.8px)] text-[rgba(43,33,24,0.5)]">
-              인터넷 없이도 저장한 한국어 표현을 확인할 수 있어요.
+              {t(
+                "인터넷 없이도 저장한 한국어 표현을 확인할 수 있어요.",
+                "See your saved Korean phrases even without internet.",
+              )}
             </span>
           </span>
           <img src={arrowG} alt="" className="shrink-0" style={{ width: size(19), height: size(18) }} />
@@ -129,11 +145,11 @@ export default function MyPage() {
 
       {/* 즐겨찾기 */}
       <ListSection
-        title="즐겨찾기"
-        sub="Favorites"
+        title={t("즐겨찾기", "Favorites")}
+        sub={t("Favorites", "즐겨찾기")}
         count={favorites.length}
         onViewAll={() => navigate("/mypage/favorites")}
-        emptyText="즐겨찾기한 장소가 없습니다."
+        emptyText={t("즐겨찾기한 장소가 없습니다.", "No favorite places yet.")}
       >
         {favorites.slice(0, PREVIEW_COUNT).map((place) => (
           <PlaceCard key={place.id} place={place} />
@@ -142,11 +158,11 @@ export default function MyPage() {
 
       {/* 스캔한 안내문 */}
       <ListSection
-        title="스캔한 안내문"
-        sub="Scanned signs"
+        title={t("스캔한 안내문", "Scanned signs")}
+        sub={t("Scanned signs", "스캔한 안내문")}
         count={signs.length}
         onViewAll={() => navigate("/mypage/scans")}
-        emptyText="스캔한 안내문이 없습니다."
+        emptyText={t("스캔한 안내문이 없습니다.", "No scanned signs yet.")}
       >
         {signs.slice(0, PREVIEW_COUNT).map((sign) => (
           <SignCard key={sign.id} sign={sign} />
@@ -155,19 +171,26 @@ export default function MyPage() {
 
       {/* 앱 설정 */}
       <section className="pt-[min(1.5rem,24px)]">
-        <SectionTitle title="앱 설정" sub="App settings" />
+        <SectionTitle title={t("앱 설정", "App settings")} sub={t("App settings", "앱 설정")} />
         <div className="mt-[min(0.625rem,10px)] rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.05)] bg-white">
-          <SettingRow icon={languageIcon} title="앱 언어" sub="Language" as="div">
+          <SettingRow icon={languageIcon} title={t("앱 언어", "Language")} sub={t("Language", "앱 언어")} as="div">
             <LanguageSelect buttonClassName="h-[min(2.09375rem,33.5px)] bg-[rgba(241,230,210,0.5)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)]" />
           </SettingRow>
-          <SettingRow icon={logoutIcon} title="로그아웃" sub="Sign out" bordered onClick={handleLogout}>
+          <SettingRow
+            icon={logoutIcon}
+            title={t("로그아웃", "Sign out")}
+            sub={t("Sign out", "로그아웃")}
+            bordered
+            onClick={handleLogout}
+          >
             <img src={arrowG} alt="" style={{ width: size(19), height: size(18) }} />
           </SettingRow>
         </div>
       </section>
 
       <p className="pt-[min(1.5rem,24px)] text-center text-[min(0.71875rem,11.5px)] leading-[min(1.168rem,18.69px)] text-[rgba(43,33,24,0.4)]">
-        여기서는? · Korea, Here's How — 한국을 찾은 여행자를 위해 정성껏 만들었습니다.
+        여기서는? · Korea, Here's How —{" "}
+        {t("한국을 찾은 여행자를 위해 정성껏 만들었습니다.", "Made with care for travelers visiting Korea.")}
       </p>
 
       {editing && profile && (
@@ -215,6 +238,7 @@ function ListSection({
   onViewAll: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <section className="pt-[min(1.5rem,24px)]">
       <div className="flex items-center justify-between pb-[min(0.625rem,10px)]">
@@ -225,7 +249,7 @@ function ListSection({
             onClick={onViewAll}
             className="flex items-center gap-[min(0.125rem,2px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] font-medium text-[#E07A5F]"
           >
-            전체 보기
+            {t("전체 보기", "View all")}
             <img src={arrowO} alt="" style={{ width: size(14), height: size(13) }} />
           </button>
         )}

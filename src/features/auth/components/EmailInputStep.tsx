@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { EmailTakenError } from "../../../api/auth";
+import { useT } from "../../../contexts/language";
 import AuthField from "./AuthField";
 import {
   descriptionClassName,
@@ -13,6 +14,7 @@ import {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type EmailInputStepProps = {
+  // 큰 제목은 고른 언어, 작은 부제는 다른 언어로 페이지가 골라서 넘긴다.
   title: string;
   subtitle: string;
   description: string;
@@ -35,21 +37,29 @@ export default function EmailInputStep({
   initialEmail,
   onNext,
 }: EmailInputStepProps) {
+  const t = useT();
   const [email, setEmail] = useState(initialEmail);
-  const [error, setError] = useState("");
+  // 오류 종류만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
+  const [error, setError] = useState<"" | "empty" | "invalid" | "taken">("");
+  const errorMessage = {
+    "": "",
+    empty: t("이메일을 입력해주세요.", "Please enter your email."),
+    invalid: t("올바른 이메일 형식이 아니에요.", "Please enter a valid email address."),
+    taken: t("이미 가입된 이메일이에요.", "This email is already registered."),
+  }[error];
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const value = email.trim();
-    if (!value) return setError("이메일을 입력해주세요.");
-    if (!EMAIL_PATTERN.test(value)) return setError("올바른 이메일 형식이 아니에요.");
+    if (!value) return setError("empty");
+    if (!EMAIL_PATTERN.test(value)) return setError("invalid");
     setLoading(true);
     try {
       await onNext(value);
     } catch (e) {
       // 그 밖의 실패 안내는 페이지가 위쪽 팝업으로 보여준다.
-      if (e instanceof EmailTakenError) setError("이미 가입된 이메일이에요.");
+      if (e instanceof EmailTakenError) setError("taken");
     } finally {
       setLoading(false);
     }
@@ -62,7 +72,7 @@ export default function EmailInputStep({
       <p className={`pt-[min(0.75rem,12px)] ${descriptionClassName}`}>{description}</p>
 
       <form onSubmit={handleSubmit} noValidate className="pt-[min(1.5rem,24px)]">
-        <AuthField label="이메일 · Email" error={error}>
+        <AuthField label={t("이메일 · Email", "Email")} error={errorMessage}>
           <input
             type="email"
             value={email}
@@ -86,7 +96,7 @@ export default function EmailInputStep({
       <p className="flex justify-center gap-[min(0.5rem,8px)] pt-[min(1.5rem,24px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)]">
         <span className="text-[rgba(43,33,24,0.85)]">{loginPrompt}</span>
         <Link to="/login" className="font-semibold text-[#2B2118] underline">
-          로그인
+          {t("로그인", "Log in")}
         </Link>
       </p>
     </div>

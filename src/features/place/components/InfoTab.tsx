@@ -4,12 +4,14 @@ import closedIcon from "../../../assets/guide/closed.svg";
 import locationIcon from "../../../assets/guide/location.svg";
 import openIcon from "../../../assets/guide/open.svg";
 import parkingIcon from "../../../assets/guide/parking.svg";
+import { useT } from "../../../contexts/language";
 import PlaceMiniMap from "./PlaceMiniMap";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 // 관광지 상세 "기본 정보" 탭: 소개 + 위치/운영시간/휴무일/입장료/주차 + 작은 지도
 export default function InfoTab({ detail }: { detail: PlaceDetail }) {
+  const t = useT();
   const { info } = detail;
   const rows = [
     { icon: locationIcon, w: 12, h: 14, label: "위치", sub: "Location", value: info.location },
@@ -40,10 +42,10 @@ export default function InfoTab({ detail }: { detail: PlaceDetail }) {
             <div className="min-w-0 flex-1">
               <p className="flex items-baseline gap-[min(0.375rem,6px)]">
                 <span className="text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] font-medium text-[rgba(43,33,24,0.55)]">
-                  {label}
+                  {t(label, sub)}
                 </span>
                 <span className="text-[min(0.625rem,10px)] leading-[min(0.9375rem,15px)] text-[rgba(43,33,24,0.35)]">
-                  {sub}
+                  {t(sub, label)}
                 </span>
               </p>
               <p className="pt-[min(0.125rem,2px)] text-[min(0.8125rem,13px)] leading-[min(1.117rem,17.875px)] text-[rgba(43,33,24,0.8)]">

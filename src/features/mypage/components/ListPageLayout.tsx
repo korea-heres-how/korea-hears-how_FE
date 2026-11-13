@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "../../../contexts/language";
 import SubPageLayout from "./SubPageLayout";
 
 type ListPageLayoutProps = {
@@ -21,11 +22,12 @@ export default function ListPageLayout({
   emptyText,
   children,
 }: ListPageLayoutProps) {
+  const t = useT();
   return (
     <SubPageLayout icon={icon} title={title} sub={sub}>
       <p className="pt-[min(0.75rem,12px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[rgba(43,33,24,0.55)]">
         {description}{" "}
-        <span className="font-medium text-[rgba(43,33,24,0.7)]">총 {count}개</span>
+        <span className="font-medium text-[rgba(43,33,24,0.7)]">{t(`총 ${count}개`, `${count} total`)}</span>
       </p>
 
       {count === 0 ? (

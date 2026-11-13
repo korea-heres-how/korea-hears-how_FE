@@ -3,6 +3,7 @@ import { explainSign, type SignExplanation } from "../../api/scan";
 import aiIcon from "../../assets/all/ai.svg";
 import AiButton from "../../components/AiButton";
 import ErrorToast from "../../components/ErrorToast";
+import { useT } from "../../contexts/language";
 import PhotoPicker from "./components/PhotoPicker";
 import PhotoPreview from "./components/PhotoPreview";
 import ResultModal from "./components/ResultModal";
@@ -16,18 +17,23 @@ const EXAMPLES = [
   "금연 구역",
   "오늘 휴무",
 ];
-const ONLY_ONE_MESSAGE = "이미지 또는 텍스트 중 하나만 입력할 수 있어요";
 
 // 안내문 해석 화면. 사진 또는 텍스트 중 하나만 입력할 수 있고, 하나라도 있으면 "안내문 해석하기"가 켜진다.
 // 이미 하나를 입력한 상태에서 다른 쪽을 누르면 토스트로 알려준다.
 // "안내문 해석하기"를 누르면 해석 결과를 받아 팝업(ResultModal)으로 띄운다.
 export default function ScanPage() {
   // 나중에 서버에 그대로 올려서(마이페이지 "스캔한 안내문" 사진으로 쓰도록) 원본 File로 들고 있는다.
+  const t = useT();
   const [photo, setPhoto] = useState<File | null>(null);
   const [text, setText] = useState("");
-  const [toast, setToast] = useState("");
+  // 팝업 종류만 저장해서, 언어를 바꾸면 문구도 같이 바뀌게 한다.
+  const [toast, setToast] = useState<"" | "onlyOne" | "failed">("");
   const closeToast = useCallback(() => setToast(""), []);
-  const showOnlyOneToast = () => setToast(ONLY_ONE_MESSAGE);
+  const showOnlyOneToast = () => setToast("onlyOne");
+  const toastMessage =
+    toast === "onlyOne"
+      ? t("이미지 또는 텍스트 중 하나만 입력할 수 있어요", "You can enter either an image or text, not both.")
+      : t("해석하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't explain the sign. Please try again in a moment.");
 
   const hasPhoto = photo !== null;
   const hasText = text !== "";
@@ -43,7 +49,7 @@ export default function ScanPage() {
       setResult(await explainSign(photo ? { photo } : { text: text.trim() }));
     } catch (e) {
       console.error(e);
-      setToast("해석하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setToast("failed");
     } finally {
       setExplaining(false);
     }
@@ -58,25 +64,35 @@ export default function ScanPage() {
     <div className="px-[min(1rem,16px)] pt-[min(1.5rem,24px)] pb-[min(5rem,80px)]">
       {toast && (
         <ErrorToast
-          message={toast}
+          message={toastMessage}
           onClose={closeToast}
           topClassName="top-[min(2rem,24px)]"
         />
       )}
       <header className="pb-[min(1.25rem,20px)]">
         <h1 className="text-[min(1.625rem,26px)] leading-[min(2.03rem,32.5px)] font-bold tracking-[-0.025em] text-[#2B2118]">
-          안내문 해석
+          {t("안내문 해석", "Sign Scanner")}
         </h1>
+        {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
         <p className="pt-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(0.86rem,13.75px)] text-[rgba(43,33,24,0.45)]">
-          Sign Scanner
+          {t("Sign Scanner", "안내문 해석")}
         </p>
         <p className="pt-[min(0.375rem,6px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] text-[rgba(43,33,24,0.6)]">
-          뜻을 모르는 안내문을 발견했나요? 사진을 찍거나 내용을 입력하면, 무슨
-          뜻인지 그리고 더 중요한{" "}
-          <strong className="font-medium text-[rgba(43,33,24,0.8)]">
-            지금 무엇을 해야 하는지
-          </strong>
-          알려드려요.
+          {t(
+            <>
+              뜻을 모르는 안내문을 발견했나요? 사진을 찍거나 내용을 입력하면, 무슨
+              뜻인지 그리고 더 중요한{" "}
+              <strong className="font-medium text-[rgba(43,33,24,0.8)]">
+                지금 무엇을 해야 하는지
+              </strong>
+              알려드려요.
+            </>,
+            <>
+              Found a sign you don't understand? Take a photo or type it in, and we'll tell you what it means
+              and, more importantly,{" "}
+              <strong className="font-medium text-[rgba(43,33,24,0.8)]">what to do right now</strong>.
+            </>,
+          )}
         </p>
       </header>
 
@@ -97,7 +113,7 @@ export default function ScanPage() {
       <div className="flex items-center gap-[min(0.75rem,12px)] py-[min(1.25rem,20px)]">
         <span className="h-px flex-1 bg-[rgba(43,33,24,0.1)]" />
         <span className="text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.35)]">
-          또는 텍스트로 입력
+          {t("또는 텍스트로 입력", "Or type the text")}
         </span>
         <span className="h-px flex-1 bg-[rgba(43,33,24,0.1)]" />
       </div>
@@ -105,7 +121,7 @@ export default function ScanPage() {
       {/* 텍스트 */}
       <label className="block">
         <span className="text-[min(0.75rem,12px)] leading-[min(1.125rem,18px)] text-[rgba(43,33,24,0.55)]">
-          안내문 내용 · Text on the sign
+          {t("안내문 내용 · Text on the sign", "Text on the sign")}
         </span>
         <textarea
           value={text}
@@ -114,7 +130,7 @@ export default function ScanPage() {
           readOnly={hasPhoto}
           onClick={hasPhoto ? showOnlyOneToast : undefined}
           maxLength={MAX_LENGTH}
-          placeholder="예: 외부 음식 반입 금지"
+          placeholder={t("예: 외부 음식 반입 금지", "e.g. 외부 음식 반입 금지")}
           className="mt-[min(0.375rem,6px)] block h-[min(5.375rem,86px)] w-full resize-none rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] bg-white px-[min(1rem,16px)] py-[min(0.75rem,12px)] text-[min(0.875rem,14px)] leading-[min(1.25rem,20px)] text-[#2B2118] outline-none placeholder:text-[rgba(43,33,24,0.35)]"
         />
       </label>
@@ -136,10 +152,10 @@ export default function ScanPage() {
           />
           <span className="flex flex-col items-start">
             <span className="text-[min(0.84375rem,13.5px)] leading-[min(1.0546875rem,16.875px)] font-medium text-[#F1E6D2]">
-              안내문 해석하기
+              {t("안내문 해석하기", "Explain this sign")}
             </span>
             <span className="text-[min(0.625rem,10px)] leading-[min(0.78125rem,12.5px)] font-medium text-[rgba(241,230,210,0.6)]">
-              Explain this sign
+              {t("Explain this sign", "안내문 해석하기")}
             </span>
           </span>
         </button>
@@ -148,7 +164,7 @@ export default function ScanPage() {
       {/* 예시 */}
       <section className="pt-[min(1rem,16px)]">
         <p className="text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.45)]">
-          예시로 해보기
+          {t("예시로 해보기", "Try an example")}
         </p>
         <div className="flex flex-wrap gap-[min(0.5rem,8px)] pt-[min(0.375rem,6px)]">
           {EXAMPLES.map((example) => (

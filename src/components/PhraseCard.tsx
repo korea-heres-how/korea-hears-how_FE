@@ -7,6 +7,7 @@ import copyIcon from "../assets/scan/copy.svg";
 import showIcon from "../assets/scan/show.svg";
 import soundIcon from "../assets/scan/soundg.svg";
 import soundWhiteIcon from "../assets/scan/soundw.svg";
+import { useT } from "../contexts/language";
 import ShowToStaff from "./ShowToStaff";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -24,6 +25,7 @@ type PhraseCardProps = {
 };
 
 export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
+  const t = useT();
   const [saved, setSaved] = useState(phrase.saved ?? false);
   const [speaking, setSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -103,7 +105,7 @@ export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
           <CircleButton
             active={saved}
             onClick={toggleSaved}
-            label={saved ? "표현 저장 해제" : "표현 저장"}
+            label={saved ? t("표현 저장 해제", "Remove from saved") : t("표현 저장", "Save phrase")}
             pressed={saved}
           >
             {saved ? (
@@ -120,7 +122,7 @@ export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
               />
             )}
           </CircleButton>
-          <CircleButton active={speaking} onClick={speak} label="한국어로 듣기">
+          <CircleButton active={speaking} onClick={speak} label={t("한국어로 듣기", "Listen in Korean")}>
             <img
               src={speaking ? soundWhiteIcon : soundIcon}
               alt=""
@@ -146,7 +148,7 @@ export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
         <button
           type="button"
           onClick={copy}
-          aria-label={copied ? "복사됨" : "한국어 문장 복사"}
+          aria-label={copied ? t("복사됨", "Copied") : t("한국어 문장 복사", "Copy Korean phrase")}
           className="flex size-[min(2rem,32px)] items-center justify-center rounded-full border border-[rgba(43,33,24,0.1)]"
         >
           <img

@@ -7,6 +7,7 @@ import photoIcon from "../../../assets/mypage/photo.svg";
 import closeIcon from "../../../assets/scan/x-black.svg";
 import ErrorToast from "../../../components/ErrorToast";
 import { useAuth } from "../../../contexts/auth";
+import { useT } from "../../../contexts/language";
 import ConfirmDialog from "./ConfirmDialog";
 import ProfileAvatar from "./ProfileAvatar";
 
@@ -22,6 +23,7 @@ type EditProfileModalProps = {
 // 이름·사진은 바꿀 수 있고, 이메일은 로그인 아이디라서 보여주기만 한다.
 export default function EditProfileModal({ profile, onClose, onSaved }: EditProfileModalProps) {
   const navigate = useNavigate();
+  const t = useT();
   const { logout } = useAuth();
   const [name, setName] = useState(profile.name);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -29,8 +31,16 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState("");
+  // 팝업 종류만 저장해서, 언어를 바꾸면 문구도 같이 바뀌게 한다.
+  const [toast, setToast] = useState<"" | "save" | "delete">("");
   const closeToast = useCallback(() => setToast(""), []);
+  const toastMessage =
+    toast === "save"
+      ? t("저장하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't save. Please try again in a moment.")
+      : t(
+          "탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.",
+          "Couldn't delete your account. Please try again in a moment.",
+        );
   const photoInput = useRef<HTMLInputElement>(null);
 
   // 미리보기 주소는 다른 사진을 고르거나 팝업을 닫으면 해제한다.
@@ -72,7 +82,7 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
       onSaved(saved);
     } catch (e) {
       console.error(e);
-      setToast("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setToast("save");
       setSaving(false);
     }
   };
@@ -86,7 +96,7 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
     } catch (e) {
       console.error(e);
       // 확인창을 닫아야 프로필 수정 팝업 위에 뜨는 토스트가 보인다.
-      setToast("탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setToast("delete");
       setDeleting(false);
       setConfirmingDelete(false);
     }
@@ -99,21 +109,23 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
       aria-labelledby="edit-profile-title"
       className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(43,33,24,0.45)] p-[min(1rem,16px)] backdrop-blur-[2px]"
     >
-      {toast && <ErrorToast message={toast} onClose={closeToast} />}
+      {toast && <ErrorToast message={toastMessage} onClose={closeToast} />}
 
       <div className="flex max-h-[90svh] w-full max-w-[448px] flex-col overflow-hidden rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.1)] bg-white">
         {/* 제목 */}
         <div className="flex items-center justify-between border-b border-[rgba(43,33,24,0.05)] px-[min(1.25rem,20px)] py-[min(1rem,16px)]">
           <h2 id="edit-profile-title" className="flex items-baseline gap-[min(0.25rem,4px)]">
-            <span className="text-[min(1rem,16px)] leading-[min(1.5rem,24px)] font-bold text-[#2B2118]">프로필 수정</span>
+            <span className="text-[min(1rem,16px)] leading-[min(1.5rem,24px)] font-bold text-[#2B2118]">
+              {t("프로필 수정", "Edit profile")}
+            </span>
             <span className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.4)]">
-              Edit profile
+              {t("Edit profile", "프로필 수정")}
             </span>
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t("닫기", "Close")}
             className="flex size-[min(2rem,32px)] items-center justify-center rounded-full"
           >
             <img src={closeIcon} alt="" style={{ width: size(21), height: size(20) }} />
@@ -131,10 +143,10 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
                 className="flex h-[min(2.34375rem,37.5px)] items-center gap-[min(0.375rem,6px)] rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.1)] px-[min(0.75rem,12px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-medium text-[#2B2118]"
               >
                 <img src={photoIcon} alt="" style={{ width: size(14), height: size(13) }} />
-                사진 변경
+                {t("사진 변경", "Change photo")}
               </button>
               <p className="pt-[min(0.375rem,6px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.4)]">
-                JPG · PNG, 정사각형 권장
+                {t("JPG · PNG, 정사각형 권장", "JPG · PNG, square recommended")}
               </p>
               <input ref={photoInput} type="file" accept="image/jpeg,image/png" hidden onChange={choosePhoto} />
             </div>
@@ -142,16 +154,18 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
 
           {/* 입력칸 */}
           <div className="flex flex-col gap-[min(0.875rem,14px)] pt-[min(1.25rem,20px)]">
-            <Field label="이름 · Name" value={name} onChange={(e) => setName(e.target.value)} />
-            <Field label="이메일 · Email" value={profile.email} readOnly />
+            <Field label={t("이름 · Name", "Name")} value={name} onChange={(e) => setName(e.target.value)} />
+            <Field label={t("이메일 · Email", "Email")} value={profile.email} readOnly />
           </div>
 
           {/* 계정 관리 */}
           <div className="pt-[min(1.5rem,24px)]">
             <h3 className="flex items-baseline gap-[min(0.25rem,4px)]">
-              <span className="text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-bold text-[#2B2118]">계정 관리</span>
+              <span className="text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-bold text-[#2B2118]">
+                {t("계정 관리", "Account")}
+              </span>
               <span className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.4)]">
-                Account
+                {t("Account", "계정 관리")}
               </span>
             </h3>
             <button
@@ -164,10 +178,10 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[rgba(180,69,58,0.9)]">
-                  회원 탈퇴
+                  {t("회원 탈퇴", "Delete account")}
                 </span>
                 <span className="block text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.45)]">
-                  Delete account
+                  {t("Delete account", "회원 탈퇴")}
                 </span>
               </span>
               <img src={arrowG} alt="" className="shrink-0" style={{ width: size(19), height: size(18) }} />
@@ -182,7 +196,7 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
             onClick={onClose}
             className="flex h-[min(2.390625rem,38.25px)] items-center rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.1)] px-[min(1rem,16px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[rgba(43,33,24,0.7)]"
           >
-            취소
+            {t("취소", "Cancel")}
           </button>
           <button
             type="button"
@@ -190,16 +204,19 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
             disabled={!canSave}
             className="flex h-[min(2.265625rem,36.25px)] items-center rounded-[min(0.5rem,8px)] bg-[#E07A5F] px-[min(1rem,16px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[#F1E6D2] disabled:cursor-default disabled:opacity-40"
           >
-            저장하기
+            {t("저장하기", "Save")}
           </button>
         </div>
       </div>
 
       {confirmingDelete && (
         <ConfirmDialog
-          title="정말 탈퇴하시겠어요?"
-          message="계정을 삭제하면 즐겨찾기와 스캔한 안내문 기록이 모두 사라지고 되돌릴 수 없어요."
-          confirmLabel="회원 탈퇴"
+          title={t("정말 탈퇴하시겠어요?", "Delete your account?")}
+          message={t(
+            "계정을 삭제하면 즐겨찾기와 스캔한 안내문 기록이 모두 사라지고 되돌릴 수 없어요.",
+            "Deleting your account removes all your favorites and scanned signs. This can't be undone.",
+          )}
+          confirmLabel={t("회원 탈퇴", "Delete account")}
           busy={deleting}
           onCancel={() => setConfirmingDelete(false)}
           onConfirm={confirmDelete}

@@ -2,6 +2,7 @@ import { type ChangeEvent, useRef } from "react";
 import cameraIcon from "../../../assets/scan/camera.svg";
 import imageIcon from "../../../assets/scan/image.svg";
 import photoIcon from "../../../assets/scan/photo.svg";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -14,6 +15,7 @@ type PhotoPickerProps = {
 
 // 사진이 아직 없을 때의 점선 영역. "사진 찍기"는 카메라를, "사진 업로드"는 사진/파일 선택 창을 연다.
 export default function PhotoPicker({ onSelect, locked = false, onLocked }: PhotoPickerProps) {
+  const t = useT();
   const cameraInput = useRef<HTMLInputElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
 
@@ -35,26 +37,31 @@ export default function PhotoPicker({ onSelect, locked = false, onLocked }: Phot
         <img src={cameraIcon} alt="" style={{ width: size(25), height: size(24) }} />
       </span>
       <p className="pt-[min(0.75rem,12px)] text-[min(0.875rem,14px)] leading-[min(1.3125rem,21px)] font-medium text-[#2B2118]">
-        안내문에 카메라를 맞춰주세요
+        {t("안내문에 카메라를 맞춰주세요", "Point your camera at the sign")}
       </p>
       <p className="pt-[min(0.25rem,4px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[rgba(43,33,24,0.55)]">
-        출입구, 시장, 역에서 볼 수 있는 한국어 안내문이
-        <br />
-        가장 잘 인식돼요.
+        {t(
+          <>
+            출입구, 시장, 역에서 볼 수 있는 한국어 안내문이
+            <br />
+            가장 잘 인식돼요.
+          </>,
+          "Works best with Korean signs at entrances, markets, and stations.",
+        )}
       </p>
 
       <div className="flex w-full flex-col gap-[min(0.625rem,10px)] pt-[min(1.25rem,20px)]">
         <PickerButton
           icon={photoIcon}
-          label="사진 찍기"
-          sub="Take a photo"
+          label={t("사진 찍기", "Take a photo")}
+          sub={t("Take a photo", "사진 찍기")}
           primary
           onClick={() => open(cameraInput.current)}
         />
         <PickerButton
           icon={imageIcon}
-          label="사진 업로드"
-          sub="Upload image"
+          label={t("사진 업로드", "Upload image")}
+          sub={t("Upload image", "사진 업로드")}
           onClick={() => open(uploadInput.current)}
         />
       </div>

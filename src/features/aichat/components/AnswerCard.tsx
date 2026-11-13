@@ -8,6 +8,7 @@ import look from "../../../assets/aichat/look.svg";
 import translation from "../../../assets/aichat/translation.svg";
 import x from "../../../assets/aichat/x.svg";
 import Feedback from "../../../components/Feedback";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -15,6 +16,7 @@ type Icon = { src: string; w: number; h: number };
 
 // 서버에서 받은 AI 답변을 보여주는 카드
 export default function AnswerCard({ answer }: { answer: AiAnswer }) {
+  const t = useT();
   return (
     <div className="flex">
       <div className="max-w-[95%] rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.07)] bg-white p-[min(1.0625rem,17px)]">
@@ -30,9 +32,9 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
         <Section
           className="pt-[min(1rem,16px)]"
           icon={{ src: doubleCk, w: 12, h: 11 }}
-          label="해야 할 행동"
+          label={t("해야 할 행동", "What you should do")}
           labelClassName="text-[#A9BBA0]"
-          sub="What you should do"
+          sub={t("What you should do", "해야 할 행동")}
         >
           <BulletList items={answer.doList} icon={{ src: ck, w: 10, h: 7 }} />
         </Section>
@@ -40,9 +42,9 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
         <Section
           className="pt-[min(0.875rem,14px)]"
           icon={{ src: ban, w: 12, h: 11 }}
-          label="피해야 할 행동"
+          label={t("피해야 할 행동", "What to avoid")}
           labelClassName="text-[#E07A5F]"
-          sub="What to avoid"
+          sub={t("What to avoid", "피해야 할 행동")}
         >
           <BulletList items={answer.avoidList} icon={{ src: x, w: 7, h: 7 }} />
         </Section>
@@ -51,9 +53,9 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
           <div className="rounded-[min(0.75rem,12px)] border border-[rgba(224,122,95,0.15)] bg-[rgba(224,122,95,0.06)] px-[min(0.9375rem,15px)] py-[min(0.8125rem,13px)]">
             <SectionTitle
               icon={{ src: look, w: 12, h: 11 }}
-              label="현장에서 확인하세요"
+              label={t("현장에서 확인하세요", "What to look for")}
               labelClassName="text-[rgba(224,122,95,0.8)]"
-              sub="What to look for"
+              sub={t("What to look for", "현장에서 확인하세요")}
             />
             <p className="pt-[min(0.25rem,4px)] text-[min(0.8125rem,13px)] leading-[min(1.3203rem,21.125px)] text-[rgba(43,33,24,0.75)]">
               {answer.lookFor}
@@ -65,9 +67,9 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
           <div className="rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] px-[min(0.9375rem,15px)] py-[min(0.8125rem,13px)]">
             <SectionTitle
               icon={{ src: translation, w: 12, h: 11 }}
-              label="유용한 한국어 표현"
+              label={t("유용한 한국어 표현", "Useful Korean phrase")}
               labelClassName="text-[rgba(43,33,24,0.45)]"
-              sub="Useful Korean phrase"
+              sub={t("Useful Korean phrase", "유용한 한국어 표현")}
             />
             <p className="pt-[min(0.375rem,6px)] text-[min(1rem,16px)] leading-[min(1.5rem,24px)] text-[#2B2118]">
               {answer.phrase.korean}

@@ -8,6 +8,8 @@ import bad from "../assets/aichat/bad.svg";
 import ck from "../assets/aichat/ck.svg";
 import good from "../assets/aichat/good.svg";
 import correct from "../assets/scan/correct.svg";
+import { useT } from "../contexts/language";
+import { useFeedbackReasonLabel } from "../contexts/labels";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -25,6 +27,8 @@ type FeedbackProps = {
 
 // "도움이 되었나요?" 피드백 영역. 도움 안 됨을 누르면 이유와 의견을 받는다.
 export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
+  const t = useT();
+  const reasonLabel = useFeedbackReasonLabel();
   const [step, setStep] = useState<Step>("idle");
   const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [comment, setComment] = useState("");
@@ -75,11 +79,18 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
   };
 
   if (step === "good") {
-    return <Done>도움이 되었다니 다행이에요.</Done>;
+    return <Done>{t("도움이 되었다니 다행이에요.", "Glad it helped!")}</Done>;
   }
 
   if (step === "bad") {
-    return <Done>감사합니다 — 여러분의 의견이 다른 여행자에게 도움이 됩니다.</Done>;
+    return (
+      <Done>
+        {t(
+          "감사합니다 — 여러분의 의견이 다른 여행자에게 도움이 됩니다.",
+          "Thank you — your feedback helps other travelers.",
+        )}
+      </Done>
+    );
   }
 
   if (step === "form") {
@@ -87,7 +98,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
       <div className="pt-[min(0.75rem,12px)]">
         <div className="rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.05)] bg-[rgba(241,230,210,0.5)] p-[min(0.9375rem,15px)]">
           <p className="text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] font-medium text-[rgba(43,33,24,0.75)]">
-            어떤 점이 아쉬웠나요?
+            {t("어떤 점이 아쉬웠나요?", "What could be better?")}
           </p>
 
           <div className="flex flex-wrap gap-[min(0.5rem,8px)] pt-[min(0.5rem,8px)]">
@@ -105,7 +116,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
                       : "border-[rgba(43,33,24,0.1)] bg-white text-[rgba(43,33,24,0.65)]"
                   }`}
                 >
-                  {reason}
+                  {reasonLabel(reason)}
                 </button>
               );
             })}
@@ -116,8 +127,8 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={COMMENT_MAX}
-              placeholder="추가 의견이 있다면 적어주세요 (선택)"
-              aria-label="추가 의견"
+              placeholder={t("추가 의견이 있다면 적어주세요 (선택)", "Any other comments? (optional)")}
+              aria-label={t("추가 의견", "Additional comments")}
               className="block h-[min(3.46875rem,55.5px)] w-full resize-none rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] bg-white px-[min(0.8125rem,13px)] py-[min(0.5625rem,9px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[#2B2118] outline-none placeholder:text-[rgba(43,33,24,0.35)]"
             />
           </div>
@@ -132,7 +143,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
                 onClick={cancel}
                 className="px-[min(0.75rem,12px)] py-[min(0.375rem,6px)] text-[min(0.75rem,12px)] leading-[min(1.125rem,18px)] text-[rgba(43,33,24,0.5)]"
               >
-                취소
+                {t("취소", "Cancel")}
               </button>
               <button
                 type="button"
@@ -140,7 +151,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
                 disabled={!canSubmit}
                 className="rounded-full bg-[#E07A5F] px-[min(1rem,16px)] py-[min(0.375rem,6px)] text-[min(0.78125rem,12.5px)] leading-[min(1.171875rem,18.75px)] text-[#F1E6D2] disabled:cursor-default disabled:opacity-40"
               >
-                의견 보내기
+                {t("의견 보내기", "Send feedback")}
               </button>
             </div>
           </div>
@@ -154,10 +165,10 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
       <div className="flex items-center justify-center gap-[min(0.75rem,12px)] pt-[min(1rem,16px)]">
         <span className="flex items-center gap-[min(0.25rem,4px)] text-[min(0.75rem,12px)] leading-[min(1.125rem,18px)] text-[rgba(43,33,24,0.45)]">
           <img src={correct} alt="" style={{ width: size(13), height: size(12) }} />
-          정확했나요?
+          {t("정확했나요?", "Was this accurate?")}
         </span>
-        <ScanFeedbackButton icon={good} label="도움됨" onClick={sendHelpful} />
-        <ScanFeedbackButton icon={bad} label="도움 안 됨" onClick={() => setStep("form")} />
+        <ScanFeedbackButton icon={good} label={t("도움됨", "Helpful")} onClick={sendHelpful} />
+        <ScanFeedbackButton icon={bad} label={t("도움 안 됨", "Not helpful")} onClick={() => setStep("form")} />
       </div>
     );
   }
@@ -166,14 +177,14 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
     <div className="flex items-center gap-[min(0.75rem,12px)] pt-[min(0.75rem,12px)]">
       <div>
         <p className="text-[min(0.78125rem,12.5px)] leading-[min(0.9766rem,15.625px)] text-[rgba(43,33,24,0.55)]">
-          도움이 되었나요?
+          {t("도움이 되었나요?", "Was this helpful?")}
         </p>
         <p className="text-[min(0.625rem,10px)] leading-[min(0.78125rem,12.5px)] text-[rgba(43,33,24,0.4)]">
-          Was this helpful?
+          {t("Was this helpful?", "도움이 되었나요?")}
         </p>
       </div>
-      <FeedbackButton icon={good} label="도움됨" onClick={sendHelpful} />
-      <FeedbackButton icon={bad} label="도움 안 됨" onClick={() => setStep("form")} />
+      <FeedbackButton icon={good} label={t("도움됨", "Helpful")} onClick={sendHelpful} />
+      <FeedbackButton icon={bad} label={t("도움 안 됨", "Not helpful")} onClick={() => setStep("form")} />
     </div>
   );
 }

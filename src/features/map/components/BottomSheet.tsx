@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useT } from "../../../contexts/language";
 
 const MID_HEIGHT_PX = 290;
 // 이 속도(px/ms)보다 빠르게 튕기면 가장 가까운 단계 대신 튕긴 방향의 다음 단계로 간다.
@@ -34,6 +35,7 @@ export default function BottomSheet({
   expandedContent,
   scrollResetKey,
 }: BottomSheetProps) {
+  const t = useT();
   const sheetRef = useRef<HTMLDivElement>(null);
   const grabRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -162,14 +164,16 @@ export default function BottomSheet({
         <div className="flex items-center justify-between gap-[min(0.5rem,8px)] px-[min(1rem,16px)] pb-[min(0.5rem,8px)]">
           <div>
             <h2 className="text-[min(1rem,16px)] font-semibold leading-[min(1.25rem,20px)] tracking-[-0.025em] text-[#2B2118]">
-              내 주변 장소
+              {t("내 주변 장소", "Nearby places")}
             </h2>
+            {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
             <p className="mt-[min(0.125rem,2px)] text-[min(0.65625rem,10.5px)] leading-[min(0.8203rem,13.125px)] text-[rgba(43,33,24,0.45)]">
-              Nearby places
+              {t("Nearby places", "내 주변 장소")}
               {count !== undefined && (
                 <>
                   {" · "}
-                  <span className="font-medium text-[#E07A5F]">{count}</span>곳
+                  <span className="font-medium text-[#E07A5F]">{count}</span>
+                  {t("곳", count === 1 ? " place" : " places")}
                 </>
               )}
             </p>

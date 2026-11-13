@@ -1,5 +1,6 @@
 import { getMockPlaceDetail } from "./mocks/placeDetail";
 import { getMockNearbyPlaces, getMockPlaces } from "./mocks/places";
+import type { Language } from "../contexts/language";
 import type { Phrase } from "./phrases";
 
 // 서버가 내려줄 장소 한 개 (TourAPI 기반, 백엔드와 필드 확정 전)
@@ -29,10 +30,12 @@ export type PlacesQuery = {
   category?: Place["category"];
 };
 
-// 거리·도보 시간 표시 문구: "2.1 km", "도보 27분", "2.1 km · 도보 27분"
+// 거리·도보 시간 표시 문구: "2.1 km", "도보 27분"(영어: "27 min walk"), "2.1 km · 도보 27분"
 export const formatKm = (place: Place) => `${(place.distanceM / 1000).toFixed(1)} km`;
-export const formatWalk = (place: Place) => `도보 ${place.walkMinutes}분`;
-export const formatDistance = (place: Place) => `${formatKm(place)} · ${formatWalk(place)}`;
+export const formatWalk = (place: Place, language: Language = "ko") =>
+  language === "en" ? `${place.walkMinutes} min walk` : `도보 ${place.walkMinutes}분`;
+export const formatDistance = (place: Place, language: Language = "ko") =>
+  `${formatKm(place)} · ${formatWalk(place, language)}`;
 
 // ⚠️ mapy가 위도, mapx가 경도. 서버 좌표는 항상 이 함수로 바꿔서 쓴다.
 export const toLatLng = (place: Place) => ({

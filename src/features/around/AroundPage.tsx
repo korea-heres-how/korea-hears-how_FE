@@ -8,6 +8,7 @@ import timeIcon from "../../assets/around/time.svg";
 import AiButton from "../../components/AiButton";
 import CategoryChips from "../../components/CategoryChips";
 import PlaceListCard from "../../components/PlaceListCard";
+import { useLanguage, useT } from "../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -21,6 +22,8 @@ type Sort = "distance" | "name";
 // "여기서는? 가이드"를 누르면 관광지 상세로 간다. 카드 자체를 누르는 동작은 없다.
 export default function AroundPage() {
   const navigate = useNavigate();
+  const t = useT();
+  const { language } = useLanguage();
   const [places, setPlaces] = useState<Place[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("전체");
@@ -52,13 +55,17 @@ export default function AroundPage() {
     <div className="px-[min(1rem,16px)] pt-[min(1.5rem,24px)] pb-[min(5rem,80px)]">
       <header className="pb-[min(1rem,16px)]">
         <h1 className="text-[min(1.625rem,26px)] leading-[min(2.03rem,32.5px)] font-bold tracking-[-0.025em] text-[#2B2118]">
-          주변 장소
+          {t("주변 장소", "Nearby Places")}
         </h1>
+        {/* 큰 제목은 고른 언어, 작은 부제는 다른 언어 */}
         <p className="pt-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(0.86rem,13.75px)] text-[rgba(43,33,24,0.45)]">
-          Nearby Places
+          {t("Nearby Places", "주변 장소")}
         </p>
         <p className="pt-[min(0.375rem,6px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] text-[rgba(43,33,24,0.6)]">
-          지도에서 본 장소들을 목록으로 둘러보세요. 각 장소마다 행동 가이드가 함께 있어요.
+          {t(
+            "지도에서 본 장소들을 목록으로 둘러보세요. 각 장소마다 행동 가이드가 함께 있어요.",
+            "Browse the places from the map as a list. Each place comes with a guide on how to act there.",
+          )}
         </p>
       </header>
 
@@ -71,8 +78,8 @@ export default function AroundPage() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="장소, 음식, 키워드 검색"
-          aria-label="장소 검색"
+          placeholder={t("장소, 음식, 키워드 검색", "Search places, food, keywords")}
+          aria-label={t("장소 검색", "Search places")}
           className="min-w-0 flex-1 bg-transparent text-[min(0.875rem,14px)] leading-[min(1.25rem,20px)] text-[#2B2118] outline-none placeholder:text-[rgba(43,33,24,0.4)]"
         />
       </label>
@@ -88,20 +95,21 @@ export default function AroundPage() {
       {/* 개수 + 정렬 */}
       <div className="flex flex-col gap-[min(0.625rem,10px)] pt-[min(1rem,16px)]">
         <p className="text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] text-[rgba(43,33,24,0.6)]">
-          <span className="font-medium text-[#2B2118]">{visible.length}</span>곳 찾았어요
+          <span className="font-medium text-[#2B2118]">{visible.length}</span>
+          {t("곳 찾았어요", visible.length === 1 ? " place found" : " places found")}
         </p>
         <div className="flex gap-[min(0.125rem,2px)] self-start rounded-full border border-[rgba(43,33,24,0.1)] bg-white p-[min(0.25rem,4px)]">
-          <SortButton icon={distanceIcon} label="가까운 순" active={sort === "distance"} onClick={() => setSort("distance")} />
-          <SortButton icon={nameIcon} label="이름순" active={sort === "name"} onClick={() => setSort("name")} />
+          <SortButton icon={distanceIcon} label={t("가까운 순", "Nearest")} active={sort === "distance"} onClick={() => setSort("distance")} />
+          <SortButton icon={nameIcon} label={t("이름순", "Name")} active={sort === "name"} onClick={() => setSort("name")} />
           {/* 정렬과 별개로 켜고 끄는 필터 */}
-          <SortButton icon={timeIcon} label="영업 중" active={openOnly} onClick={() => setOpenOnly((prev) => !prev)} />
+          <SortButton icon={timeIcon} label={t("영업 중", "Open now")} active={openOnly} onClick={() => setOpenOnly((prev) => !prev)} />
         </div>
       </div>
 
       {/* 장소 목록 */}
       {visible.length === 0 ? (
         <p className="py-[min(1.5rem,24px)] text-center text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] text-[rgba(43,33,24,0.35)]">
-          찾는 장소가 없어요.
+          {t("찾는 장소가 없어요.", "No places found.")}
         </p>
       ) : (
         <div className="flex flex-col gap-[min(0.75rem,12px)] pt-[min(1rem,16px)]">
@@ -117,7 +125,7 @@ export default function AroundPage() {
               tip={place.tip}
               imageUrl={place.imageUrl}
               distanceText={formatKm(place)}
-              walkText={formatWalk(place)}
+              walkText={formatWalk(place, language)}
               onGuideClick={() => navigate(`/place/${place.contentid}`)}
             />
           ))}
@@ -125,7 +133,14 @@ export default function AroundPage() {
       )}
 
       <p className="pt-[min(1.25rem,20px)] text-center text-[min(0.75rem,12px)] leading-[min(1.125rem,18px)] text-[rgba(43,33,24,0.45)]">
-        카드를 누르면 그 장소의 <span className="font-medium text-[rgba(43,33,24,0.7)]">행동 가이드</span>가 열려요.
+        {t(
+          <>
+            카드를 누르면 그 장소의 <span className="font-medium text-[rgba(43,33,24,0.7)]">행동 가이드</span>가 열려요.
+          </>,
+          <>
+            Tap a card to open that place's <span className="font-medium text-[rgba(43,33,24,0.7)]">guide</span>.
+          </>,
+        )}
       </p>
 
       {/* 하단 Nav 위 오른쪽에 떠 있는 AI 버튼 */}

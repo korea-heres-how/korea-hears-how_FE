@@ -1,5 +1,7 @@
 import arrowOrange from "../assets/map/arrow-orange.svg";
 import know from "../assets/map/know.svg";
+import { useLanguage, useT } from "../contexts/language";
+import { useCategoryLabel, useSubcategoryLabel } from "../contexts/labels";
 import PlaceStatus from "./PlaceStatus";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -38,7 +40,13 @@ export default function PlaceListCard({
   onClick,
   onGuideClick,
 }: PlaceListCardProps) {
-  const meta = [category, subcategory, walkText].filter(Boolean).join(" · ");
+  const t = useT();
+  const { language } = useLanguage();
+  const categoryLabel = useCategoryLabel();
+  const subcategoryLabel = useSubcategoryLabel();
+  const meta = [categoryLabel(category), subcategoryLabel(subcategory), walkText].filter(Boolean).join(" · ");
+  // 큰 이름은 고른 언어, 작은 이름은 다른 언어
+  const [mainTitle, subTitle] = language === "en" ? [titleEn, title] : [title, titleEn];
 
   return (
     // 안에 "가이드" 버튼이 있어서 카드는 button 대신 div로 두고, 누를 수 있을 때만 버튼 역할을 준다.
@@ -67,10 +75,10 @@ export default function PlaceListCard({
         <div className="flex items-start justify-between gap-[min(0.5rem,8px)]">
           <div className="min-w-0">
             <p className="truncate text-[min(0.96875rem,15.5px)] leading-[min(1.33rem,21.3125px)] font-semibold text-[#2B2118]">
-              {title}
+              {mainTitle}
             </p>
             <p className="truncate pt-[min(0.125rem,2px)] text-[min(0.71875rem,11.5px)] leading-[min(1.078rem,17.25px)] text-[rgba(43,33,24,0.45)]">
-              {titleEn}
+              {subTitle}
             </p>
           </div>
           {distanceText && (
@@ -103,7 +111,7 @@ export default function PlaceListCard({
             }}
             className="flex items-center gap-[min(0.25rem,4px)] text-[min(0.75rem,12px)] leading-[min(1.125rem,18px)] font-medium text-[#E07A5F]"
           >
-            여기서는? 가이드
+            {t("여기서는? 가이드", "Local guide")}
             <img src={arrowOrange} alt="" style={{ width: size(13), height: size(12) }} />
           </button>
         </div>

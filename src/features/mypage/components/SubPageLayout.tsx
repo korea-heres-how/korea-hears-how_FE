@@ -2,11 +2,13 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 import back from "../../../assets/mypage/back.svg";
 import AiButton from "../../../components/AiButton";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 type SubPageLayoutProps = {
   icon: string;
+  // 큰 제목은 고른 언어, 작은 부제는 다른 언어로 쓰는 쪽에서 골라서 넘긴다.
   title: string;
   sub: string;
   children: ReactNode;
@@ -16,6 +18,7 @@ type SubPageLayoutProps = {
 // 뒤로가기 버튼은 항상 마이페이지로 돌아간다. (주소로 바로 들어온 경우에도 앱 밖으로 나가지 않게)
 export default function SubPageLayout({ icon, title, sub, children }: SubPageLayoutProps) {
   const navigate = useNavigate();
+  const t = useT();
 
   return (
     <div className="px-[min(1rem,16px)] pt-[min(1.5rem,24px)] pb-[min(5rem,80px)]">
@@ -23,7 +26,7 @@ export default function SubPageLayout({ icon, title, sub, children }: SubPageLay
         <button
           type="button"
           onClick={() => navigate("/mypage")}
-          aria-label="마이페이지로 돌아가기"
+          aria-label={t("마이페이지로 돌아가기", "Back to My Page")}
           className="flex size-[min(2.25rem,36px)] shrink-0 items-center justify-center rounded-full border border-[rgba(43,33,24,0.1)] bg-white"
         >
           <img src={back} alt="" style={{ width: size(19), height: size(18) }} />

@@ -7,13 +7,14 @@ import myOff from '../assets/nav/my-off.svg'
 import myOn from '../assets/nav/my-on.svg'
 import scanOff from '../assets/nav/scan-off.svg'
 import scanOn from '../assets/nav/scan-on.svg'
+import { useT } from '../contexts/language'
 
 // on 아이콘은 off 아이콘(21x20)과 원본 크기가 달라서, 각 SVG의 원본 크기(px)를 그대로 쓴다.
 const NAV_ITEMS = [
-  { to: '/map', label: '지도', on: { src: mapOn, w: 21, h: 20 }, off: mapOff },
-  { to: '/list', label: '주변', on: { src: aroundOn, w: 15, h: 15 }, off: aroundOff },
-  { to: '/scan', label: '스캔', on: { src: scanOn, w: 17, h: 15 }, off: scanOff },
-  { to: '/mypage', label: '마이', on: { src: myOn, w: 14, h: 18 }, off: myOff },
+  { to: '/map', label: '지도', labelEn: 'Map', on: { src: mapOn, w: 21, h: 20 }, off: mapOff },
+  { to: '/list', label: '주변', labelEn: 'Nearby', on: { src: aroundOn, w: 15, h: 15 }, off: aroundOff },
+  { to: '/scan', label: '스캔', labelEn: 'Scan', on: { src: scanOn, w: 17, h: 15 }, off: scanOff },
+  { to: '/mypage', label: '마이', labelEn: 'My', on: { src: myOn, w: 14, h: 18 }, off: myOff },
 ]
 
 const OFF_SIZE = { w: 21, h: 20 }
@@ -21,10 +22,11 @@ const OFF_SIZE = { w: 21, h: 20 }
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`
 
 export default function Nav() {
+  const t = useT()
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/5 bg-[#E07A5F] pb-[env(safe-area-inset-bottom)]">
       <ul className="flex h-[min(3.75rem,60px)]">
-        {NAV_ITEMS.map(({ to, label, on, off }) => (
+        {NAV_ITEMS.map(({ to, label, labelEn, on, off }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}
@@ -41,7 +43,7 @@ export default function Nav() {
                     <span className="flex h-[min(1.25rem,20px)] w-[min(1.3125rem,21px)] items-center justify-center">
                       <img src={icon.src} alt="" style={{ width: size(icon.w), height: size(icon.h) }} />
                     </span>
-                    {label}
+                    {t(label, labelEn)}
                   </>
                 )
               }}

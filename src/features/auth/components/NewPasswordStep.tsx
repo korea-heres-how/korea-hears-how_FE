@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import eyeOff from "../../../assets/auth/eye-off.svg";
 import eye from "../../../assets/auth/eye.svg";
+import { useT } from "../../../contexts/language";
 import AuthField from "./AuthField";
 import {
   inputClassName,
@@ -13,9 +14,9 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 // 영문과 숫자를 모두 포함한 8자 이상
 const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-const PASSWORD_RULE = "영문, 숫자를 포함해 8자 이상 입력해주세요.";
 
 type NewPasswordStepProps = {
+  // 큰 제목은 고른 언어, 작은 부제는 다른 언어로 페이지가 골라서 넘긴다.
   title: string;
   subtitle: string;
   passwordLabel: string;
@@ -37,18 +38,24 @@ export default function NewPasswordStep({
   initialPassword = "",
   onSubmit,
 }: NewPasswordStepProps) {
+  const t = useT();
+  const passwordRule = t(
+    "영문, 숫자를 포함해 8자 이상 입력해주세요.",
+    "Use at least 8 characters, including letters and numbers.",
+  );
   const [password, setPassword] = useState(initialPassword);
   const [confirm, setConfirm] = useState(initialPassword);
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmError, setConfirmError] = useState("");
+  // 오류 여부만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
+  const [passwordError, setPasswordError] = useState(false);
+  const [confirmError, setConfirmError] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const invalid = !PASSWORD_PATTERN.test(password);
     const mismatch = password !== confirm;
-    setPasswordError(invalid ? PASSWORD_RULE : "");
-    setConfirmError(mismatch ? "비밀번호가 일치하지 않아요." : "");
+    setPasswordError(invalid);
+    setConfirmError(mismatch);
     if (invalid || mismatch) return;
     setLoading(true);
     try {
@@ -68,22 +75,22 @@ export default function NewPasswordStep({
       <form onSubmit={handleSubmit} noValidate className="pt-[min(1.5rem,24px)]">
         <PasswordField
           label={passwordLabel}
-          hint={PASSWORD_RULE}
-          error={passwordError}
+          hint={passwordRule}
+          error={passwordError ? passwordRule : ""}
           value={password}
           onChange={(value) => {
             setPassword(value);
-            if (passwordError) setPasswordError("");
+            if (passwordError) setPasswordError(false);
           }}
         />
         <div className="pt-[min(1rem,16px)]">
           <PasswordField
             label={confirmLabel}
-            error={confirmError}
+            error={confirmError ? t("비밀번호가 일치하지 않아요.", "Passwords don't match.") : ""}
             value={confirm}
             onChange={(value) => {
               setConfirm(value);
-              if (confirmError) setConfirmError("");
+              if (confirmError) setConfirmError(false);
             }}
           />
         </div>
@@ -110,6 +117,7 @@ function PasswordField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const t = useT();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -126,7 +134,7 @@ function PasswordField({
       <button
         type="button"
         onClick={() => setVisible((prev) => !prev)}
-        aria-label={visible ? "비밀번호 숨기기" : "비밀번호 보기"}
+        aria-label={visible ? t("비밀번호 숨기기", "Hide password") : t("비밀번호 보기", "Show password")}
         aria-pressed={visible}
         className="absolute right-[min(0.5rem,8px)] bottom-[min(0.3125rem,5px)] flex size-[min(2rem,32px)] items-center justify-center"
       >

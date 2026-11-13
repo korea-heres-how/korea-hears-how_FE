@@ -1,4 +1,5 @@
 import notice from "../../../assets/mypage/notice.svg";
+import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -13,6 +14,7 @@ type ConfirmDialogProps = {
 
 // 되돌릴 수 없는 일(회원 탈퇴, 표현 전체 삭제 등) 전에 띄우는 빨간 확인창. 취소 버튼으로만 닫힌다.
 export default function ConfirmDialog({ title, message, confirmLabel, busy, onCancel, onConfirm }: ConfirmDialogProps) {
+  const t = useT();
   return (
     <div
       role="alertdialog"
@@ -42,7 +44,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, busy, onCa
             disabled={busy}
             className="flex h-[min(2.390625rem,38.25px)] items-center rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.1)] px-[min(1rem,16px)] text-[min(0.84375rem,13.5px)] leading-[min(1.265625rem,20.25px)] font-medium text-[rgba(43,33,24,0.7)]"
           >
-            취소
+            {t("취소", "Cancel")}
           </button>
           <button
             type="button"

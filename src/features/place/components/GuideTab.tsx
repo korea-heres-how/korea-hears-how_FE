@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { PlaceDetail } from "../../../api/places";
 import arrowDown from "../../../assets/guide/arrow-down.svg";
+import { useT } from "../../../contexts/language";
 import SectionTitle from "./SectionTitle";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -8,10 +9,14 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 // 관광지 상세 "행동 가이드" 탭: 헷갈릴 수 있는 점 / 이렇게 하면 돼요 / 주의하세요
 // "자세히"는 아직 화면이 없어서 동작 없이 모양만 있다.
 export default function GuideTab({ detail }: { detail: PlaceDetail }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-[min(1.5rem,24px)]">
       <section>
-        <SectionTitle title="여기서 헷갈릴 수 있어요" sub="You might find this confusing" />
+        <SectionTitle
+          title={t("여기서 헷갈릴 수 있어요", "You might find this confusing")}
+          sub={t("You might find this confusing", "여기서 헷갈릴 수 있어요")}
+        />
         <Box>
           {detail.confusions.map(({ question, answer }, i) => (
             <div key={question} className={`px-[min(0.875rem,14px)] py-[min(0.875rem,14px)] ${i > 0 ? DIVIDER : ""}`}>
@@ -27,7 +32,10 @@ export default function GuideTab({ detail }: { detail: PlaceDetail }) {
       </section>
 
       <section>
-        <SectionTitle title="이렇게 하면 돼요" sub="Here's what to do" />
+        <SectionTitle
+          title={t("이렇게 하면 돼요", "Here's what to do")}
+          sub={t("Here's what to do", "이렇게 하면 돼요")}
+        />
         <Box>
           <ol>
             {detail.steps.map((step, i) => (
@@ -42,7 +50,7 @@ export default function GuideTab({ detail }: { detail: PlaceDetail }) {
                   type="button"
                   className="flex shrink-0 items-center gap-[min(0.125rem,2px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(224,122,95,0.7)]"
                 >
-                  자세히
+                  {t("자세히", "More")}
                   <img src={arrowDown} alt="" style={{ width: size(12), height: size(11) }} />
                 </button>
               </li>
@@ -52,7 +60,7 @@ export default function GuideTab({ detail }: { detail: PlaceDetail }) {
       </section>
 
       <section>
-        <SectionTitle title="주의하세요" sub="Good to know" />
+        <SectionTitle title={t("주의하세요", "Good to know")} sub={t("Good to know", "주의하세요")} />
         <div className="mt-[min(0.625rem,10px)] flex flex-col gap-[min(0.625rem,10px)] rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] bg-white p-[min(0.875rem,14px)]">
           {detail.cautions.map((caution) => (
             <p
