@@ -1,4 +1,7 @@
-import type { Place, PlacesQuery } from "../places";
+import type { Place } from "../places";
+
+// 더미 장소를 흩뿌릴 영역 (남서쪽 / 북동쪽 꼭짓점)
+type Area = { swLat: number; swLng: number; neLat: number; neLng: number };
 
 // [임시] 서버가 준비되기 전까지 쓰는 가짜 장소 목록.
 // 어디서 테스트해도 마커가 보이도록, 조회한 영역 안의 비율 위치(x: 서→동, y: 남→북)에 장소를 만든다.
@@ -126,10 +129,9 @@ const MOCK_ITEMS: (Omit<Place, "mapx" | "mapy"> & { x: number; y: number })[] = 
   },
 ];
 
-export function getMockPlaces(query: PlacesQuery): Place[] {
-  return MOCK_ITEMS.filter(
-    (item) => !query.category || item.category === query.category,
-  ).map(({ x, y, ...item }) => ({
+// 지도 화면은 서버(api/map/nearby.ts)에 연결됐고, 이 더미는 주변 탭(AroundPage)에서만 쓴다.
+function getMockPlaces(query: Area): Place[] {
+  return MOCK_ITEMS.map(({ x, y, ...item }) => ({
     ...item,
     // 서버처럼 문자열 좌표로 만든다. (mapx: 경도, mapy: 위도)
     mapx: String(query.swLng + (query.neLng - query.swLng) * x),

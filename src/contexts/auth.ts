@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { LoginResult } from "../api/auth/login";
+import type { LoginResult } from "../api/auth/types";
 
 export type AuthContextValue = {
   user: LoginResult | null;

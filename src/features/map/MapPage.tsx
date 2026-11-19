@@ -1,15 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  formatDistance,
-  formatKm,
-  formatWalk,
-  getPlaces,
-  type Place,
-  toLatLng,
-} from "../../api/places";
+import { formatDistance, formatKm, formatWalk, getNearbyPlaces } from "../../api/map/nearby";
+import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
+import ErrorToast from "../../components/ErrorToast";
 import PlaceListCard from "../../components/PlaceListCard";
 import { useLanguage, useT } from "../../contexts/language";
 import BottomSheet from "./components/BottomSheet";
@@ -22,6 +17,17 @@ import { useMyLocation } from "./components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
+// 두 좌표 사이의 직선거리(m)
+function distanceBetween(a: kakao.maps.LatLng, b: kakao.maps.LatLng) {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.getLat() - a.getLat());
+  const dLng = toRad(b.getLng() - a.getLng());
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.getLat())) * Math.cos(toRad(b.getLat())) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
 export default function MapPage() {
   const navigate = useNavigate();
   const t = useT();
@@ -31,7 +37,11 @@ export default function MapPage() {
   // 따라가기 모드: 현재 위치 버튼을 누르면 켜지고, 지도를 끌면 꺼진다.
   const [following, setFollowing] = useState(false);
 
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const closeToast = useCallback(() => setLoadFailed(false), []);
+  // 언어를 바꾸는 등 조회가 겹치면 마지막 요청의 결과만 쓴다.
+  const latestRequest = useRef(0);
   // 마커와 바텀시트 카드가 같이 쓰는 선택 상태
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const searchedOnce = useRef(false);
@@ -40,21 +50,26 @@ export default function MapPage() {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // 지도에 지금 보이는 영역으로 장소를 조회한다. ("이 지역에서 다시 검색" 버튼도 나중에 이 함수를 쓴다)
+  // 서버는 "중심 + 반경"으로 찾으므로, 지도 가운데를 중심으로 화면 모서리까지 닿는 반경을 쓴다.
   const searchArea = async (target: kakao.maps.Map) => {
-    const bounds = target.getBounds();
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
+    const center = target.getCenter();
+    const radiusM = distanceBetween(center, target.getBounds().getNorthEast());
+    const requestId = ++latestRequest.current;
     try {
-      const result = await getPlaces({
-        swLat: sw.getLat(),
-        swLng: sw.getLng(),
-        neLat: ne.getLat(),
-        neLng: ne.getLng(),
+      const result = await getNearbyPlaces({
+        latitude: center.getLat(),
+        longitude: center.getLng(),
+        radiusM,
+        language,
       });
+      if (requestId !== latestRequest.current) return;
       setPlaces(result);
       setSelectedId(null);
     } catch (e) {
+      if (requestId !== latestRequest.current) return;
       console.error(e);
+      setPlaces([]);
+      setLoadFailed(true);
     }
   };
 
@@ -75,6 +90,13 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
+  // 언어를 바꾸면 이름 외의 문구(상태·세부 분류·예절 팁)가 그 언어로 오므로 같은 영역을 다시 조회한다.
+  useEffect(() => {
+    if (map && searchedOnce.current) searchArea(map);
+    // 언어가 바뀔 때만 다시 조회한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
+
   // 따라가기 중에는 내 위치가 바뀔 때마다 지도도 따라간다.
   useEffect(() => {
     if (!map || !following || myLocation.status === "loading") return;
@@ -89,7 +111,7 @@ export default function MapPage() {
   // 선택한 장소는 카드 목록 맨 앞으로 보낸다.
   const orderedPlaces = [...visiblePlaces].sort(
     (a, b) =>
-      Number(b.contentid === selectedId) - Number(a.contentid === selectedId),
+      Number(b.id === selectedId) - Number(a.id === selectedId),
   );
 
   // 장소가 선택되면 맨 앞으로 온 카드가 보이게 가로 목록을 처음으로 되돌린다.
@@ -100,16 +122,17 @@ export default function MapPage() {
   const changeCategory = (next: Category) => {
     setCategory(next);
     // 선택된 장소가 걸러져서 안 보이게 되면 선택을 푼다.
-    const selected = places.find((place) => place.contentid === selectedId);
+    const selected = places.find((place) => place.id === selectedId);
     if (selected && next !== "전체" && selected.category !== next)
       setSelectedId(null);
   };
 
   // 카드를 누르면 해당 마커를 선택하고 지도를 그 장소로 옮긴다. (따라가기는 끈다)
-  const selectFromCard = (place: Place) => {
-    setSelectedId(place.contentid);
+  const selectFromCard = (place: NearbyPlace) => {
+    setSelectedId(place.id);
     setFollowing(false);
-    const { lat, lng } = toLatLng(place);
+    if (!place.position) return;
+    const { lat, lng } = place.position;
     map?.panTo(new kakao.maps.LatLng(lat, lng));
   };
 
@@ -125,6 +148,12 @@ export default function MapPage() {
   return (
     // 화면 높이에서 하단 Nav(App의 main 아래 여백)만큼 뺀 높이를 헤더 + 지도가 나눠 쓴다.
     <div className="flex h-[calc(100svh-min(3.8125rem,61px)-env(safe-area-inset-bottom))] flex-col">
+      {loadFailed && (
+        <ErrorToast
+          message={t("주변 장소를 불러오지 못했어요", "Couldn't load nearby places.")}
+          onClose={closeToast}
+        />
+      )}
       <Header onCategoryChange={changeCategory} />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <KakaoMap
@@ -133,20 +162,20 @@ export default function MapPage() {
           onDragStart={() => setFollowing(false)}
           onIdle={searchFirstTime}
         >
-          {visiblePlaces.map((place) => {
-            const position = toLatLng(place);
-            return (
-              <PlaceMarker
-                key={place.contentid}
-                position={position}
-                name={language === "en" ? place.titleEn : place.title}
-                // [임시] 거리는 더미 고정 값. 서버 연결 후 내 위치로 계산한다.
-                distanceText={formatDistance(place, language)}
-                selected={place.contentid === selectedId}
-                onClick={() => setSelectedId(place.contentid)}
-              />
-            );
-          })}
+          {/* 좌표가 없는 장소는 마커 없이 카드로만 보여준다. */}
+          {visiblePlaces.map(
+            (place) =>
+              place.position && (
+                <PlaceMarker
+                  key={place.id}
+                  position={place.position}
+                  name={language === "en" ? place.titleEn : place.title}
+                  distanceText={formatDistance(place, language)}
+                  selected={place.id === selectedId}
+                  onClick={() => setSelectedId(place.id)}
+                />
+              ),
+          )}
         </KakaoMap>
         {/* 현재 위치 버튼과 AI 버튼은 시트 위에 붙어서 시트와 같이 움직인다. */}
         <BottomSheet
@@ -170,19 +199,18 @@ export default function MapPage() {
             <div className="flex flex-col gap-[min(0.75rem,12px)] px-[min(1rem,16px)] pb-[min(1rem,16px)]">
               {orderedPlaces.map((place) => (
                 <PlaceListCard
-                  key={place.contentid}
+                  key={place.id}
                   title={place.title}
                   titleEn={place.titleEn}
                   category={place.category}
                   subcategory={place.subcategory}
                   status={place.status}
-                  busy={place.busy}
+                  statusColor={place.statusColor}
                   tip={place.tip}
-                  imageUrl={place.imageUrl}
                   distanceText={formatKm(place)}
                   walkText={formatWalk(place, language)}
                   onClick={() => selectFromCard(place)}
-                  onGuideClick={() => navigate(`/place/${place.contentid}`)}
+                  onGuideClick={() => navigate(`/place/${place.id}`)}
                 />
               ))}
             </div>
@@ -201,11 +229,11 @@ export default function MapPage() {
           >
             {orderedPlaces.map((place) => (
               <NearbyPlaceCard
-                key={place.contentid}
+                key={place.id}
                 place={place}
                 distanceText={formatDistance(place, language)}
                 onClick={() => selectFromCard(place)}
-                onGuideClick={() => navigate(`/place/${place.contentid}`)}
+                onGuideClick={() => navigate(`/place/${place.id}`)}
               />
             ))}
           </div>

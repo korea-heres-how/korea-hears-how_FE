@@ -12,7 +12,8 @@ type PlaceListCardProps = {
   category: string;
   subcategory: string;
   status: string;
-  busy: boolean;
+  busy?: boolean; // [mock 데이터용] 혼잡 여부
+  statusColor?: "green" | "red" | "gray"; // [서버 데이터용] business_status.color
   tip: string;
   imageUrl?: string;
   distanceText?: string; // 2.1 km
@@ -33,6 +34,7 @@ export default function PlaceListCard({
   subcategory,
   status,
   busy,
+  statusColor,
   tip,
   imageUrl,
   distanceText,
@@ -67,6 +69,7 @@ export default function PlaceListCard({
         <PlaceStatus
           status={status}
           busy={busy}
+          color={statusColor}
           className="absolute top-[min(0.5rem,8px)] left-[min(0.5rem,8px)] text-[min(0.625rem,10px)] leading-[min(0.9375rem,15px)] text-[#2B2118]"
         />
       </div>

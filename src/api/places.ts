@@ -1,5 +1,5 @@
 import { getMockPlaceDetail } from "./mocks/placeDetail";
-import { getMockNearbyPlaces, getMockPlaces } from "./mocks/places";
+import { getMockNearbyPlaces } from "./mocks/places";
 import type { Language } from "../contexts/language";
 import type { Phrase } from "./phrases";
 
@@ -21,15 +21,6 @@ export type Place = {
   mapy: string; // 위도 (문자열)
 };
 
-// 지도에서 지금 보이는 영역 (남서쪽 / 북동쪽 꼭짓점)
-export type PlacesQuery = {
-  swLat: number;
-  swLng: number;
-  neLat: number;
-  neLng: number;
-  category?: Place["category"];
-};
-
 // 거리·도보 시간 표시 문구: "2.1 km", "도보 27분"(영어: "27 min walk"), "2.1 km · 도보 27분"
 export const formatKm = (place: Place) => `${(place.distanceM / 1000).toFixed(1)} km`;
 export const formatWalk = (place: Place, language: Language = "ko") =>
@@ -45,20 +36,6 @@ export const toLatLng = (place: Place) => ({
 
 // [임시] 서버 연결 전까지는 true. 서버가 준비되면 false로 바꾸고 mocks 폴더를 지운다.
 const USE_MOCK = true;
-
-// 영역 안의 장소 목록을 가져온다. 서버(안): GET /places?swLat&swLng&neLat&neLng&category
-export async function getPlaces(query: PlacesQuery): Promise<Place[]> {
-  if (USE_MOCK) return getMockPlaces(query);
-
-  const params = new URLSearchParams(
-    Object.entries(query)
-      .filter(([, value]) => value !== undefined)
-      .map(([key, value]) => [key, String(value)]),
-  );
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/places?${params}`);
-  if (!res.ok) throw new Error(`장소 목록을 불러오지 못했어요 (${res.status})`);
-  return res.json();
-}
 
 // 주변 탭 목록: 내 위치 주변 장소. 서버(안): GET /places/nearby?lat&lng — 경로·형식은 백엔드와 협의 필요
 export async function getNearbyPlaces(): Promise<Place[]> {

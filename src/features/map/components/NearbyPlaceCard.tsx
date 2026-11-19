@@ -1,4 +1,4 @@
-import type { Place } from "../../../api/places";
+import type { NearbyPlace } from "../../../api/map/types";
 import arrowOrange from "../../../assets/map/arrow-orange.svg";
 import PlaceStatus from "../../../components/PlaceStatus";
 import { useLanguage, useT } from "../../../contexts/language";
@@ -7,7 +7,7 @@ import { useCategoryLabel } from "../../../contexts/labels";
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 type NearbyPlaceCardProps = {
-  place: Place;
+  place: NearbyPlace;
   distanceText?: string; // "2.1 km · 도보 27분"
   onClick: () => void; // 카드를 누르면 마커 선택
   onGuideClick: () => void; // 오른쪽 아래 화살표를 누르면 관광지 상세로
@@ -35,10 +35,9 @@ export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideC
       className="flex w-[min(14.25rem,228px)] cursor-pointer shrink-0 snap-start flex-col overflow-hidden rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.07)] bg-white text-left"
     >
       <div className="relative h-[min(7rem,112px)] w-full bg-[#E2E2E2]">
-        {place.imageUrl && <img src={place.imageUrl} alt="" className="size-full object-cover" />}
         <PlaceStatus
           status={place.status}
-          busy={place.busy}
+          color={place.statusColor}
           className="absolute top-[min(0.5rem,8px)] left-[min(0.5rem,8px)] max-w-[calc(100%-min(4.5rem,72px))] text-[min(0.59375rem,9.5px)] leading-[min(0.890625rem,14.25px)] text-[#2B2118]"
         />
         <span className="absolute top-[min(0.5rem,8px)] right-[min(0.5rem,8px)] rounded-full bg-[rgba(251,246,234,0.9)] px-[min(0.5rem,8px)] py-[min(0.125rem,2px)] text-[min(0.59375rem,9.5px)] leading-[min(0.890625rem,14.25px)] text-[#2B2118]">

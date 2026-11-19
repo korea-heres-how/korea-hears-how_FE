@@ -1,0 +1,75 @@
+import type { Language } from "../../contexts/language";
+import { apiRequest } from "../client";
+import type { LocalizedCard, LocalizedCardPage, NearbyPlace, NearbyQuery, ServerCategoryCode } from "./types";
+
+const CATEGORY_FROM_CODE: Record<ServerCategoryCode, NearbyPlace["category"]> = {
+  attraction: "관광지",
+  culture: "문화시설",
+  restaurant: "음식점",
+  market: "시장",
+  cafe: "카페",
+};
+
+function toNearbyPlace(card: LocalizedCard): NearbyPlace {
+  const ko = card.name.ko ?? card.name.en ?? "";
+  const en = card.name.en ?? card.name.ko ?? "";
+  return {
+    id: card.place_id,
+    title: ko,
+    titleEn: en,
+    category: (card.category.code && CATEGORY_FROM_CODE[card.category.code]) ?? "기타",
+    subcategory: card.category.detail_label ?? "",
+    status: card.business_status.label,
+    statusColor: card.business_status.color,
+    tip: card.etiquette_preview ?? "",
+    position: card.location ? { lat: card.location.latitude, lng: card.location.longitude } : null,
+    distanceM: card.distance?.meters ?? null,
+    walkMinutes: card.walking_minutes,
+  };
+}
+
+// 한 번에 받을 수 있는 최대 개수(서버 제한 10)와, 지도에 보여줄 최대 개수
+const PAGE_SIZE = 10;
+const MAX_PLACES = 50;
+// 서버가 받는 반경 범위 (m)
+const MAX_RADIUS_M = 20000;
+
+// GET /api/places/nearby?latitude&longitude&radius_m&language&page&page_size
+function fetchPage(query: NearbyQuery, page: number) {
+  return apiRequest<LocalizedCardPage>("/api/places/nearby", {
+    query: {
+      latitude: query.latitude,
+      longitude: query.longitude,
+      radius_m: Math.min(Math.max(Math.ceil(query.radiusM), 1), MAX_RADIUS_M),
+      language: query.language,
+      page,
+      page_size: PAGE_SIZE,
+    },
+  });
+}
+
+// 반경 안의 장소를 가까운 순으로 최대 MAX_PLACES개까지 가져온다.
+// 첫 페이지의 total_count를 보고 필요한 페이지만 한꺼번에 더 요청한다.
+export async function getNearbyPlaces(query: NearbyQuery): Promise<NearbyPlace[]> {
+  const first = await fetchPage(query, 1);
+  const total = Math.min(first.pagination.total_count, MAX_PLACES);
+  const pageCount = Math.ceil(total / PAGE_SIZE);
+
+  const rest =
+    first.pagination.has_next && pageCount > 1
+      ? await Promise.all(Array.from({ length: pageCount - 1 }, (_, i) => fetchPage(query, i + 2)))
+      : [];
+
+  const cards = [first, ...rest].flatMap((page) => page.items).slice(0, MAX_PLACES);
+  // 페이지 사이에 같은 장소가 겹쳐 오면 한 번만 남긴다.
+  const seen = new Set<string>();
+  return cards.filter((card) => !seen.has(card.place_id) && seen.add(card.place_id)).map(toNearbyPlace);
+}
+
+// 거리·도보 시간 표시 문구: "2.1 km", "도보 27분"(영어: "27 min walk")
+export const formatKm = (place: NearbyPlace) =>
+  place.distanceM === null ? "" : `${(place.distanceM / 1000).toFixed(1)} km`;
+export const formatWalk = (place: NearbyPlace, language: Language) =>
+  place.walkMinutes === null ? "" : language === "en" ? `${place.walkMinutes} min walk` : `도보 ${place.walkMinutes}분`;
+export const formatDistance = (place: NearbyPlace, language: Language) =>
+  [formatKm(place), formatWalk(place, language)].filter(Boolean).join(" · ");
