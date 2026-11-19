@@ -25,13 +25,20 @@ export function distanceM(a: LatLng, b: LatLng) {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
-// 거리(m)를 "2.1 km · 도보 27분" 형태로 바꾼다. 도보 시간 = 거리(m) ÷ 80 (분)
-// 거리(m) → "2.1 km · 도보 27분" (도보 분 = 거리 ÷ 80)
-// [임시] 지금은 장소 거리를 더미 고정 값으로 보여줘서 안 쓰지만, 서버 연결 후 내 위치로 계산할 때 쓴다.
-export function formatDistance(m: number) {
-  const km = (m / 1000).toFixed(1);
-  const walkMin = Math.max(1, Math.round(m / 80));
-  return `${km} km · 도보 ${walkMin}분`;
+// 내 위치에서 장소까지의 거리 문구. 지도 카드·마커·관광지 상세가 같이 쓴다.
+// 도보 시간은 직선거리 ÷ 80m(분)로 어림한 값이라 실제 경로보다 짧게 나올 수 있다.
+// 위치 권한이 없으면(기본 위치) 오해할 수 있어서 null → 화면에서 거리를 숨긴다.
+export function myDistanceText(
+  myLocation: MyLocationState,
+  place: LatLng | null,
+  language: 'ko' | 'en',
+): { km: string; walk: string; full: string } | null {
+  if (myLocation.status !== 'success' || !place) return null
+  const m = distanceM(myLocation.position, place)
+  const walkMin = Math.max(1, Math.round(m / 80))
+  const km = `${(m / 1000).toFixed(1)} km`
+  const walk = language === 'en' ? `${walkMin} min walk` : `도보 ${walkMin}분`
+  return { km, walk, full: `${km} · ${walk}` }
 }
 
 export type MyLocationState =

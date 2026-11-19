@@ -1,4 +1,3 @@
-import type { Language } from "../../contexts/language";
 import { apiRequest } from "../client";
 import type { LocalizedCard, LocalizedCardPage, NearbyPlace, NearbyQuery, ServerCategoryCode } from "./types";
 
@@ -10,6 +9,10 @@ const CATEGORY_FROM_CODE: Record<ServerCategoryCode, NearbyPlace["category"]> = 
   cafe: "카페",
 };
 
+// 서버 분류 코드 → 화면의 한국어 분류. 목록에 없는 코드(accommodation 등)는 "기타". (장소 상세도 같이 쓴다)
+export const toCategory = (code: string | null): NearbyPlace["category"] =>
+  (code && CATEGORY_FROM_CODE[code as ServerCategoryCode]) || "기타";
+
 function toNearbyPlace(card: LocalizedCard): NearbyPlace {
   const ko = card.name.ko ?? card.name.en ?? "";
   const en = card.name.en ?? card.name.ko ?? "";
@@ -17,14 +20,12 @@ function toNearbyPlace(card: LocalizedCard): NearbyPlace {
     id: card.place_id,
     title: ko,
     titleEn: en,
-    category: (card.category.code && CATEGORY_FROM_CODE[card.category.code]) ?? "기타",
+    category: toCategory(card.category.code),
     subcategory: card.category.detail_label ?? "",
     status: card.business_status.label,
     statusColor: card.business_status.color,
     tip: card.etiquette_preview ?? "",
     position: card.location ? { lat: card.location.latitude, lng: card.location.longitude } : null,
-    distanceM: card.distance?.meters ?? null,
-    walkMinutes: card.walking_minutes,
   };
 }
 
@@ -76,11 +77,3 @@ export async function getNearbyPlaces(query: NearbyQuery): Promise<NearbyPlace[]
   const seen = new Set<string>();
   return cards.filter((card) => !seen.has(card.place_id) && seen.add(card.place_id)).map(toNearbyPlace);
 }
-
-// 거리·도보 시간 표시 문구: "2.1 km", "도보 27분"(영어: "27 min walk")
-export const formatKm = (place: NearbyPlace) =>
-  place.distanceM === null ? "" : `${(place.distanceM / 1000).toFixed(1)} km`;
-export const formatWalk = (place: NearbyPlace, language: Language) =>
-  place.walkMinutes === null ? "" : language === "en" ? `${place.walkMinutes} min walk` : `도보 ${place.walkMinutes}분`;
-export const formatDistance = (place: NearbyPlace, language: Language) =>
-  [formatKm(place), formatWalk(place, language)].filter(Boolean).join(" · ");

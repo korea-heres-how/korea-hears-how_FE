@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { formatDistance, formatKm, formatWalk, getNearbyPlaces, toRequestRadius } from "../../api/map/nearby";
+import { getNearbyPlaces, toRequestRadius } from "../../api/map/nearby";
 import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
@@ -13,7 +13,7 @@ import LocationButton from "./components/LocationButton";
 import NearbyListCard from "./components/NearbyListCard";
 import NearbyPlaceCard from "./components/NearbyPlaceCard";
 import PlaceMarker from "./components/PlaceMarker";
-import { useMyLocation } from "./components/useMyLocation";
+import { myDistanceText, useMyLocation } from "./components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -206,7 +206,7 @@ export default function MapPage() {
                   key={place.id}
                   position={place.position}
                   name={language === "en" ? place.titleEn : place.title}
-                  distanceText={formatDistance(place, language)}
+                  distanceText={myDistanceText(myLocation, place.position, language)?.full}
                   selected={place.id === selectedId}
                   onClick={() => setSelectedId(place.id)}
                 />
@@ -244,8 +244,8 @@ export default function MapPage() {
                   status={place.status}
                   statusColor={place.statusColor}
                   tip={place.tip}
-                  distanceText={formatKm(place)}
-                  walkText={formatWalk(place, language)}
+                  distanceText={myDistanceText(myLocation, place.position, language)?.km}
+                  walkText={myDistanceText(myLocation, place.position, language)?.walk}
                   onClick={() => selectFromCard(place)}
                   onGuideClick={() => navigate(`/place/${place.id}`)}
                 />
@@ -268,7 +268,7 @@ export default function MapPage() {
               <NearbyPlaceCard
                 key={place.id}
                 place={place}
-                distanceText={formatDistance(place, language)}
+                distanceText={myDistanceText(myLocation, place.position, language)?.full}
                 onClick={() => selectFromCard(place)}
                 onGuideClick={() => navigate(`/place/${place.id}`)}
               />

@@ -1,4 +1,4 @@
-import type { PlaceDetail } from "../../../api/places";
+import type { PlaceDetail } from "../../../api/place/types";
 import admissionIcon from "../../../assets/guide/admission.svg";
 import closedIcon from "../../../assets/guide/closed.svg";
 import locationIcon from "../../../assets/guide/location.svg";
@@ -12,7 +12,7 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 // 관광지 상세 "기본 정보" 탭: 소개 + 위치/운영시간/휴무일/입장료/주차 + 작은 지도
 export default function InfoTab({ detail }: { detail: PlaceDetail }) {
   const t = useT();
-  const { info } = detail;
+  const { info, position } = detail;
   const rows = [
     { icon: locationIcon, w: 12, h: 14, label: "위치", sub: "Location", value: info.location },
     { icon: openIcon, w: 16, h: 15, label: "운영시간", sub: "Opening hours", value: info.hours },
@@ -24,9 +24,12 @@ export default function InfoTab({ detail }: { detail: PlaceDetail }) {
   return (
     <div>
       <h3 className="text-[min(1rem,16px)] leading-[min(1.5rem,24px)] font-semibold text-[#2B2118]">Basic Information</h3>
-      <p className="pt-[min(0.25rem,4px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.45)]">
-        {info.about}
-      </p>
+      {/* 소개글 전체 (여러 문단이라 줄바꿈을 살린다) */}
+      {detail.overview && (
+        <p className="pt-[min(0.25rem,4px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] whitespace-pre-line text-[rgba(43,33,24,0.45)]">
+          {detail.overview}
+        </p>
+      )}
 
       <div className="mt-[min(0.625rem,10px)] rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] bg-white px-[min(1.0625rem,17px)] py-[min(0.3125rem,5px)]">
         {rows.map(({ icon, w, h, label, sub, value }, i) => (
@@ -48,7 +51,7 @@ export default function InfoTab({ detail }: { detail: PlaceDetail }) {
                   {t(sub, label)}
                 </span>
               </p>
-              <p className="pt-[min(0.125rem,2px)] text-[min(0.8125rem,13px)] leading-[min(1.117rem,17.875px)] text-[rgba(43,33,24,0.8)]">
+              <p className="pt-[min(0.125rem,2px)] text-[min(0.8125rem,13px)] leading-[min(1.117rem,17.875px)] whitespace-pre-line text-[rgba(43,33,24,0.8)]">
                 {value}
               </p>
             </div>
@@ -56,9 +59,11 @@ export default function InfoTab({ detail }: { detail: PlaceDetail }) {
         ))}
       </div>
 
-      <div className="pt-[min(1.25rem,20px)]">
-        <PlaceMiniMap place={detail} />
-      </div>
+      {position && (
+        <div className="pt-[min(1.25rem,20px)]">
+          <PlaceMiniMap position={position} name={detail.title} />
+        </div>
+      )}
     </div>
   );
 }

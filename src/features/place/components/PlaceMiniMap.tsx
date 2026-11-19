@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Map, useKakaoLoader } from "react-kakao-maps-sdk";
-import { type Place, toLatLng } from "../../../api/places";
 import { useT } from "../../../contexts/language";
 import PlaceMarker from "../../map/components/PlaceMarker";
+import type { LatLng } from "../../map/components/useMyLocation";
 
 const LEVEL = 3;
 
 // 관광지 상세 "기본 정보" 아래 작은 지도. 장소를 가운데 두고 주황 마커 하나만 보여준다.
 // 화면 스크롤을 방해하지 않게 끌기·확대는 막아 둔다.
-export default function PlaceMiniMap({ place }: { place: Place }) {
+export default function PlaceMiniMap({ position, name }: { position: LatLng; name: string }) {
   const t = useT();
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_JS_KEY,
   });
   const boxRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
-  const { lat, lng } = toLatLng(place);
+  const { lat, lng } = position;
 
   // 카카오맵은 처음 크기를 기억해서, 화면 크기가 바뀌면 장소가 가운데에서 밀린다.
   // 지도 상자 크기가 바뀔 때마다 다시 배치(relayout)하고 장소를 가운데로 맞춘다.
@@ -51,7 +51,7 @@ export default function PlaceMiniMap({ place }: { place: Place }) {
           onCreate={setMap}
           className="size-full"
         >
-          <PlaceMarker position={{ lat, lng }} name={place.title} selected showLabel={false} onClick={() => {}} />
+          <PlaceMarker position={{ lat, lng }} name={name} selected showLabel={false} onClick={() => {}} />
         </Map>
       )}
     </div>

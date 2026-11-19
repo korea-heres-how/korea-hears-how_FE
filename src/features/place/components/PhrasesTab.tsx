@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PlaceDetail } from "../../../api/places";
+import type { Phrase } from "../../../api/phrases";
 import PhraseCard from "../../../components/PhraseCard";
 import { useT } from "../../../contexts/language";
 
@@ -7,7 +7,14 @@ type Mode = "hear" | "say";
 
 // 관광지 상세 "현장 한국어" 탭: 들을 수 있는 말 / 내가 할 말 전환 + 공통 표현 카드.
 // 전환 버튼 아이콘은 반대색 파일이 아직 없어서 빼 두었다.
-export default function PhrasesTab({ detail }: { detail: PlaceDetail }) {
+// 현장 한국어 내용. 서버(korean_phrases)가 아직 미제공이라 형식이 정해지면 맞춰 바꾼다.
+export type PlacePhrases = {
+  phrasesHear: Phrase[]; // 들을 수 있는 말
+  phrasesSay: Phrase[]; // 내가 할 말
+};
+
+// [임시] 서버가 현장 한국어를 주기 전까지는 상세 화면에서 이 탭 대신 "준비 중" 안내를 보여준다.
+export default function PhrasesTab({ detail }: { detail: PlacePhrases }) {
   const t = useT();
   const [mode, setMode] = useState<Mode>("say");
   const phrases = mode === "say" ? detail.phrasesSay : detail.phrasesHear;

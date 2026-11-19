@@ -10,9 +10,8 @@ export type NearbyPlace = {
   status: string; // 운영 상태 문구 — 요청한 언어로 온다
   statusColor: StatusColor; // 상태 점 색
   tip: string; // Know before you go (예절 미리보기, 없으면 "")
-  position: { lat: number; lng: number } | null; // 좌표가 없으면 마커를 못 그린다
-  distanceM: number | null; // 검색 중심(지도 가운데)에서의 직선거리
-  walkMinutes: number | null;
+  position: { lat: number; lng: number } | null; // 좌표가 없으면 마커를 못 그리고 거리도 숨긴다
+  // 거리는 서버 값(지도 가운데 기준) 대신 내 위치로 프론트에서 계산한다. (useMyLocation의 myDistanceText)
 };
 
 export type StatusColor = "green" | "red" | "gray";
@@ -25,9 +24,7 @@ export type LocalizedCard = {
   name: { ko: string | null; en: string | null };
   category: { code: ServerCategoryCode | null; label: string; detail_label: string | null };
   location: { latitude: number; longitude: number } | null;
-  distance: { meters: number; text: string } | null;
   business_status: { state: "open" | "closed" | "unknown"; label: string; color: StatusColor };
-  walking_minutes: number | null;
   etiquette_preview: string | null;
 };
 

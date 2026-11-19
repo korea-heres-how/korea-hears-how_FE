@@ -1,14 +1,21 @@
 import type { ReactNode } from "react";
-import type { PlaceDetail } from "../../../api/places";
 import arrowDown from "../../../assets/guide/arrow-down.svg";
 import { useT } from "../../../contexts/language";
 import SectionTitle from "./SectionTitle";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
+// 행동 가이드 내용. 서버(action_guide)가 아직 미제공이라 형식이 정해지면 맞춰 바꾼다.
+export type ActionGuide = {
+  confusions: { question: string; answer: string }[]; // 여기서 헷갈릴 수 있어요
+  steps: string[]; // 이렇게 하면 돼요
+  cautions: string[]; // 주의하세요
+};
+
 // 관광지 상세 "행동 가이드" 탭: 헷갈릴 수 있는 점 / 이렇게 하면 돼요 / 주의하세요
 // "자세히"는 아직 화면이 없어서 동작 없이 모양만 있다.
-export default function GuideTab({ detail }: { detail: PlaceDetail }) {
+// [임시] 서버가 행동 가이드를 주기 전까지는 상세 화면에서 이 탭 대신 "준비 중" 안내를 보여준다.
+export default function GuideTab({ detail }: { detail: ActionGuide }) {
   const t = useT();
   return (
     <div className="flex flex-col gap-[min(1.5rem,24px)]">
