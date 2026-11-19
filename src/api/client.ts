@@ -72,19 +72,29 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     requestBody = JSON.stringify(body);
   }
 
-  const res = await fetch(url, { method, headers, body: requestBody });
+  let res: Response;
+  try {
+    res = await fetch(url, { method, headers, body: requestBody });
+  } catch {
+    // 인터넷이 끊겼거나 서버에 닿지 못함 (CORS로 막힌 경우도 여기로 온다)
+    throw new ApiError(0, "NETWORK_ERROR", "서버에 연결하지 못했어요");
+  }
 
   // 실패 응답도 { success:false, code, message } 형태라서 먼저 읽어본다.
   let json: ApiResponse<T> | null = null;
   try {
     json = await res.json();
   } catch {
-    // 본문이 없거나 JSON이 아닌 응답
+    // 본문이 없거나 JSON이 아닌 응답.
+    // 개발 중 이 경고가 뜨면 대부분 vite 프록시가 적용되지 않은 것 → 개발 서버를 껐다 켠다.
+    console.warn(`[api] ${method} ${path} 응답이 JSON이 아니에요 (${res.status}).`);
   }
 
-  if (!res.ok || (json && json.success === false)) {
+  if (!res.ok || !json || json.success === false) {
+    const error = new ApiError(res.status, json?.code ?? "UNKNOWN", json?.message ?? `요청에 실패했어요 (${res.status})`);
+    if (import.meta.env.DEV) console.warn(`[api] ${method} ${path} → ${res.status} ${error.code}: ${error.message}`);
     if (res.status === 401 && accessToken) onUnauthorized?.();
-    throw new ApiError(res.status, json?.code ?? "UNKNOWN", json?.message ?? `요청에 실패했어요 (${res.status})`);
+    throw error;
   }
 
   return json?.data as T;
