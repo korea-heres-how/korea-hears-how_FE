@@ -1,13 +1,8 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  type FavoritePlace,
-  getFavorites,
-  getProfile,
-  getScannedSigns,
-  type Profile,
-  type ScannedSign,
-} from "../../api/mypage";
+import { type FavoritePlace, getFavorites, getScannedSigns, type ScannedSign } from "../../api/mypage";
+import { getMe } from "../../api/mypage/me";
+import type { Profile } from "../../api/mypage/types";
 import arrowG from "../../assets/mypage/arrow-g.svg";
 import arrowO from "../../assets/mypage/arrow-o.svg";
 import bookmark from "../../assets/mypage/bookmark.svg";
@@ -42,9 +37,12 @@ export default function MyPage() {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    Promise.all([getProfile(), getFavorites(), getScannedSigns()])
-      .then(([profileResult, favoritesResult, signsResult]) => {
-        setProfile(profileResult);
+    // 내 정보는 서버, 즐겨찾기·스캔 목록은 아직 mock이라 따로 불러서 한쪽이 실패해도 다른 쪽은 보이게 한다.
+    getMe()
+      .then(setProfile)
+      .catch((e) => console.error(e));
+    Promise.all([getFavorites(), getScannedSigns()])
+      .then(([favoritesResult, signsResult]) => {
         setFavorites(favoritesResult);
         setSigns(signsResult);
       })
@@ -198,7 +196,8 @@ export default function MyPage() {
           profile={profile}
           onClose={() => setEditing(false)}
           onSaved={(saved) => {
-            setProfile(saved);
+            // 수정 결과는 이름·사진만 오므로 이메일은 서버에서 받은 값을 그대로 둔다.
+            setProfile((prev) => prev && { ...prev, name: saved.name, imageUrl: saved.imageUrl ?? prev.imageUrl });
             setEditing(false);
           }}
         />

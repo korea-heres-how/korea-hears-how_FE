@@ -1,6 +1,7 @@
 import { type ChangeEvent, type InputHTMLAttributes, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { deleteAccount, type Profile, updateProfile } from "../../../api/mypage";
+import { deleteAccount, updateProfile } from "../../../api/mypage";
+import type { Profile } from "../../../api/mypage/types";
 import arrowG from "../../../assets/mypage/arrow-g.svg";
 import deleteAccountIcon from "../../../assets/mypage/delete-account.svg";
 import photoIcon from "../../../assets/mypage/photo.svg";
@@ -16,7 +17,7 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 type EditProfileModalProps = {
   profile: Profile;
   onClose: () => void;
-  onSaved: (profile: Profile) => void;
+  onSaved: (saved: Pick<Profile, "name" | "imageUrl">) => void; // 수정 결과는 이름·사진만 온다
 };
 
 // 마이페이지 "프로필 수정"을 누르면 뜨는 팝업. X나 취소로만 닫힌다(배경을 눌러도 안 닫힘).

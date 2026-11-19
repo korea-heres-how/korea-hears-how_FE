@@ -1,26 +1,20 @@
-import type { FavoritePlace, Profile, ProfileUpdate, ScannedSign } from "../mypage";
+import type { FavoritePlace, ProfileUpdate, ScannedSign } from "../mypage";
 
 // [임시] 서버가 준비되기 전까지 쓰는 마이페이지 데이터.
 // 즐겨찾기·스캔한 안내문은 피그마 화면과 같은 더미 4개씩 (사진 없이 회색 기본 칸)
 
 const MOCK_DELAY_MS = 500;
 
-// 수정한 내용이 다시 불러와도 남아 있도록 메모리에 들고 있는다. (새로고침하면 처음으로 돌아간다)
-let mockProfile: Profile = { name: "수아", email: "admin@example.com" };
-
-export function getMockProfile(): Promise<Profile> {
-  return Promise.resolve(mockProfile);
-}
-
-export function updateMockProfile(update: ProfileUpdate): Promise<Profile> {
+// 내 정보 조회는 서버(GET /api/users/me)에 연결됐고, 수정만 아직 mock이다.
+// 서버에 저장되지 않으므로 마이페이지를 다시 열면 서버의 이름으로 돌아간다.
+export function updateMockProfile(update: ProfileUpdate): Promise<{ name: string; imageUrl?: string }> {
   console.info("[mock] 프로필 수정", update);
-  mockProfile = {
-    ...mockProfile,
+  const saved = {
     name: update.name,
     // 서버가 저장한 사진 주소 대신, 브라우저 안에서만 쓰는 임시 주소를 만든다.
-    imageUrl: update.photo ? URL.createObjectURL(update.photo) : mockProfile.imageUrl,
+    imageUrl: update.photo ? URL.createObjectURL(update.photo) : undefined,
   };
-  return new Promise((resolve) => setTimeout(() => resolve(mockProfile), MOCK_DELAY_MS));
+  return new Promise((resolve) => setTimeout(() => resolve(saved), MOCK_DELAY_MS));
 }
 
 export function deleteMockAccount(): Promise<void> {
