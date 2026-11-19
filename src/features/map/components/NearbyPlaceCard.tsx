@@ -3,6 +3,7 @@ import arrowOrange from "../../../assets/map/arrow-orange.svg";
 import PlaceStatus from "../../../components/PlaceStatus";
 import { useLanguage, useT } from "../../../contexts/language";
 import { useCategoryLabel } from "../../../contexts/labels";
+import { usePlaceImage } from "./usePlaceImage";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -13,16 +14,18 @@ type NearbyPlaceCardProps = {
   onGuideClick: () => void; // 오른쪽 아래 화살표를 누르면 관광지 상세로
 };
 
-// 지도 바텀시트 중간 단계에서 옆으로 넘겨 보는 장소 카드. 사진은 아직 회색 칸.
+// 지도 바텀시트 중간 단계에서 옆으로 넘겨 보는 장소 카드. 사진은 카드가 화면에 보일 때 불러오고, 없으면 회색 칸.
 export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideClick }: NearbyPlaceCardProps) {
   const t = useT();
   const { language } = useLanguage();
   const categoryLabel = useCategoryLabel();
+  const { ref, imageUrl } = usePlaceImage<HTMLDivElement>(place.id);
   // 큰 이름은 고른 언어, 작은 이름은 다른 언어
   const [mainTitle, subTitle] = language === "en" ? [place.titleEn, place.title] : [place.title, place.titleEn];
   return (
     // 안에 화살표 버튼이 있어서 카드는 button 대신 div에 버튼 역할을 준다.
     <div
+      ref={ref}
       role="button"
       tabIndex={0}
       onClick={onClick}
@@ -35,6 +38,15 @@ export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideC
       className="flex w-[min(14.25rem,228px)] cursor-pointer shrink-0 snap-start flex-col overflow-hidden rounded-[min(0.875rem,14px)] border border-[rgba(43,33,24,0.07)] bg-white text-left"
     >
       <div className="relative h-[min(7rem,112px)] w-full bg-[#E2E2E2]">
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt=""
+            className="size-full object-cover"
+            // 사진 주소가 깨졌으면 숨겨서 회색 칸을 보여준다.
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        )}
         <PlaceStatus
           status={place.status}
           color={place.statusColor}

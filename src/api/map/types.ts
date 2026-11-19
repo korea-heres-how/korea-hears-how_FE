@@ -43,3 +43,21 @@ export type NearbyQuery = {
   radiusM: number;
   language: Language;
 };
+
+// ---- 장소 사진 ----
+// 카드에 띄우는 사진 한 장
+export type PlaceImage = {
+  url: string;
+};
+
+// 서버 응답 data (ImagePage) 중 화면에서 쓰는 필드만 적어둔다.
+// source·copyright_type(출처·저작권)도 오지만 지금은 표시하지 않아서 적지 않는다.
+export type ServerImage = {
+  url: string;
+};
+
+export type ImagePage = {
+  place_id: string;
+  pagination: { page: number; page_size: number; total_count: number; has_next: boolean };
+  items: ServerImage[];
+};

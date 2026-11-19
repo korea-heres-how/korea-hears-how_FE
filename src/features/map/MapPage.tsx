@@ -5,12 +5,12 @@ import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
 import ErrorToast from "../../components/ErrorToast";
-import PlaceListCard from "../../components/PlaceListCard";
 import { useLanguage, useT } from "../../contexts/language";
 import BottomSheet from "./components/BottomSheet";
 import Header, { type Category } from "./components/header";
 import KakaoMap from "./components/KakaoMap";
 import LocationButton from "./components/LocationButton";
+import NearbyListCard from "./components/NearbyListCard";
 import NearbyPlaceCard from "./components/NearbyPlaceCard";
 import PlaceMarker from "./components/PlaceMarker";
 import { useMyLocation } from "./components/useMyLocation";
@@ -234,8 +234,9 @@ export default function MapPage() {
           expandedContent={
             <div className="flex flex-col gap-[min(0.75rem,12px)] px-[min(1rem,16px)] pb-[min(1rem,16px)]">
               {orderedPlaces.map((place) => (
-                <PlaceListCard
+                <NearbyListCard
                   key={place.id}
+                  placeId={place.id}
                   title={place.title}
                   titleEn={place.titleEn}
                   category={place.category}
