@@ -1,5 +1,6 @@
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { type LoginResult, login as loginApi } from "../api/auth";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type LoginResult, login as loginApi } from "../api/auth/login";
+import { setAccessToken, setUnauthorizedHandler } from "../api/client";
 import { AuthContext } from "./auth";
 
 // 로그인 정보는 sessionStorage에 둔다.
@@ -9,7 +10,11 @@ const STORAGE_KEY = "auth";
 function loadUser(): LoginResult | null {
   try {
     const saved = sessionStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
+    const parsed = saved ? JSON.parse(saved) : null;
+    // 예전(mock) 형식으로 저장된 값이면 무시한다.
+    if (!parsed?.accessToken) return null;
+    setAccessToken(parsed.accessToken);
+    return parsed;
   } catch {
     return null;
   }
@@ -20,6 +25,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginApi(email, password);
+    setAccessToken(result.accessToken);
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     } catch {
@@ -29,6 +35,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    setAccessToken(null);
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -36,6 +43,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
   }, []);
+
+  // 토큰이 만료돼서 401이 오면 로그아웃 → RequireAuth가 로그인 화면으로 보낸다.
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
 
   const value = useMemo(() => ({ user, login, logout }), [user, login, logout]);
 

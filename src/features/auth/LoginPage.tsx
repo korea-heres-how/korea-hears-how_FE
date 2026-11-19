@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
-import { LoginFailedError } from "../../api/auth";
+import { LoginFailedError } from "../../api/auth/login";
 import { useAuth } from "../../contexts/auth";
 import { useT } from "../../contexts/language";
 import AuthLayout from "./components/AuthLayout";
