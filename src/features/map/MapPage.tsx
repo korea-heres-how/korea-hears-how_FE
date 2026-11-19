@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { formatDistance, formatKm, formatWalk, getNearbyPlaces } from "../../api/map/nearby";
+import { formatDistance, formatKm, formatWalk, getNearbyPlaces, toRequestRadius } from "../../api/map/nearby";
 import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
@@ -16,6 +16,11 @@ import PlaceMarker from "./components/PlaceMarker";
 import { useMyLocation } from "./components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
+
+// 지도 이동이 끝나고 이만큼 기다린 뒤 다시 조회한다. (연달아 움직일 때 요청이 몰리지 않게)
+const SEARCH_DELAY_MS = 400;
+// 확대 수준이 같을 때, 반경의 이 비율 이상 움직여야 다시 조회한다.
+const MIN_MOVE_RATIO = 0.2;
 
 // 두 좌표 사이의 직선거리(m)
 function distanceBetween(a: kakao.maps.LatLng, b: kakao.maps.LatLng) {
@@ -45,6 +50,13 @@ export default function MapPage() {
   // 마커와 바텀시트 카드가 같이 쓰는 선택 상태
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const searchedOnce = useRef(false);
+  // 마지막으로 조회한 영역 (조금만 움직였을 때 다시 조회하지 않으려고 기억한다)
+  const lastSearch = useRef<{ center: kakao.maps.LatLng; radiusM: number; level: number } | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const languageRef = useRef(language);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
   // 헤더 카테고리 탭: 마커와 카드를 함께 거른다.
   const [category, setCategory] = useState<Category>("전체");
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -54,17 +66,21 @@ export default function MapPage() {
   const searchArea = async (target: kakao.maps.Map) => {
     const center = target.getCenter();
     const radiusM = distanceBetween(center, target.getBounds().getNorthEast());
+    // 다시 조회할지 판단할 때는 실제로 검색한 반경(최소 1km 적용)을 기준으로 한다.
+    lastSearch.current = { center, radiusM: toRequestRadius(radiusM), level: target.getLevel() };
     const requestId = ++latestRequest.current;
     try {
       const result = await getNearbyPlaces({
         latitude: center.getLat(),
         longitude: center.getLng(),
         radiusM,
-        language,
+        // 지도 이동 후 타이머로 불릴 때도 지금 언어를 쓰도록 ref에서 읽는다.
+        language: languageRef.current,
       });
       if (requestId !== latestRequest.current) return;
       setPlaces(result);
-      setSelectedId(null);
+      // 카드를 눌러 지도가 옮겨진 경우처럼, 고른 장소가 새 결과에도 있으면 선택을 유지한다.
+      setSelectedId((prev) => (result.some((place) => place.id === prev) ? prev : null));
     } catch (e) {
       if (requestId !== latestRequest.current) return;
       console.error(e);
@@ -79,6 +95,26 @@ export default function MapPage() {
     searchedOnce.current = true;
     searchArea(target);
   };
+
+  // 지도 이동·확대/축소가 끝날 때마다(idle) 보이는 영역으로 다시 조회한다.
+  // - 연달아 움직이면 마지막 이동이 끝나고 SEARCH_DELAY_MS 뒤에 한 번만 요청한다.
+  // - 확대 수준이 같고 조금만 움직였으면(반경의 MIN_MOVE_RATIO 미만) 다시 요청하지 않는다. (따라가기 중 GPS 흔들림 등)
+  const handleIdle = (target: kakao.maps.Map) => {
+    if (!searchedOnce.current) return searchFirstTime(target);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      const last = lastSearch.current;
+      if (
+        last &&
+        last.level === target.getLevel() &&
+        distanceBetween(last.center, target.getCenter()) < last.radiusM * MIN_MOVE_RATIO
+      )
+        return;
+      searchArea(target);
+    }, SEARCH_DELAY_MS);
+  };
+
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
 
   // 카카오맵은 처음 그려질 때 idle 이벤트를 안 보내기도 해서(지도를 한 번 건드려야 옴),
   // 지도가 만들어지면 화면 배치가 끝난 다음 프레임에 바로 조회한다. idle은 혹시 몰라 그대로 둔다.
@@ -160,7 +196,7 @@ export default function MapPage() {
           myLocation={myLocation}
           onCreate={setMap}
           onDragStart={() => setFollowing(false)}
-          onIdle={searchFirstTime}
+          onIdle={handleIdle}
         >
           {/* 좌표가 없는 장소는 마커 없이 카드로만 보여준다. */}
           {visiblePlaces.map(
