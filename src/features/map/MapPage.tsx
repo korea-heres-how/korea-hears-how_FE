@@ -13,6 +13,7 @@ import LocationButton from "./components/LocationButton";
 import NearbyListCard from "./components/NearbyListCard";
 import NearbyPlaceCard from "./components/NearbyPlaceCard";
 import PlaceMarker from "./components/PlaceMarker";
+import SearchAreaButton from "./components/SearchAreaButton";
 import { myDistanceText, useMyLocation } from "./components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -252,6 +253,7 @@ export default function MapPage() {
               ))}
             </div>
           }
+          floatingCenter={<SearchAreaButton />}
           floating={
             <div className="flex flex-col items-center gap-[min(0.75rem,12px)]">
               <LocationButton onClick={goToMyLocation} />

@@ -17,6 +17,8 @@ type BottomSheetProps = {
   count?: number;
   // 시트 위쪽 오른편에 띄워서 시트와 같이 움직일 요소 (AI 버튼 등)
   floating?: ReactNode;
+  // 시트 위쪽 가운데에 띄워서 시트와 같이 움직일 요소 ("이 위치에서 검색" 등)
+  floatingCenter?: ReactNode;
   // 제목 줄 오른쪽에 둘 요소 ("전체 보기" 등)
   action?: ReactNode;
   // 최소·중간 단계에서 보여줄 내용 (가로 카드)
@@ -30,6 +32,7 @@ type BottomSheetProps = {
 export default function BottomSheet({
   count,
   floating,
+  floatingCenter,
   action,
   children,
   expandedContent,
@@ -148,6 +151,11 @@ export default function BottomSheet({
       {floating && (
         <div className="absolute right-[min(1rem,16px)] bottom-[calc(100%+min(1rem,16px))]">
           {floating}
+        </div>
+      )}
+      {floatingCenter && (
+        <div className="absolute bottom-[calc(100%+min(0.75rem,12px))] left-1/2 -translate-x-1/2">
+          {floatingCenter}
         </div>
       )}
       <div
