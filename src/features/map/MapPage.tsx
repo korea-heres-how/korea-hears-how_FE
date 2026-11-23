@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { getNearbyPlaces, toRequestRadius } from "../../api/map/nearby";
+import { getNearbyPlaces } from "../../api/map/nearby";
 import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
@@ -17,11 +17,6 @@ import SearchAreaButton from "./components/SearchAreaButton";
 import { myDistanceText, useMyLocation } from "./components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
-
-// 지도 이동이 끝나고 이만큼 기다린 뒤 다시 조회한다. (연달아 움직일 때 요청이 몰리지 않게)
-const SEARCH_DELAY_MS = 400;
-// 확대 수준이 같을 때, 반경의 이 비율 이상 움직여야 다시 조회한다.
-const MIN_MOVE_RATIO = 0.2;
 
 // 두 좌표 사이의 직선거리(m)
 function distanceBetween(a: kakao.maps.LatLng, b: kakao.maps.LatLng) {
@@ -51,9 +46,8 @@ export default function MapPage() {
   // 마커와 바텀시트 카드가 같이 쓰는 선택 상태
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const searchedOnce = useRef(false);
-  // 마지막으로 조회한 영역 (조금만 움직였을 때 다시 조회하지 않으려고 기억한다)
-  const lastSearch = useRef<{ center: kakao.maps.LatLng; radiusM: number; level: number } | null>(null);
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // 마지막으로 조회한 영역 (언어를 바꾸면 이 영역을 그대로 다시 조회한다)
+  const lastSearch = useRef<{ latitude: number; longitude: number; radiusM: number } | null>(null);
   const languageRef = useRef(language);
   useEffect(() => {
     languageRef.current = language;
@@ -62,20 +56,14 @@ export default function MapPage() {
   const [category, setCategory] = useState<Category>("전체");
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // 지도에 지금 보이는 영역으로 장소를 조회한다. ("이 지역에서 다시 검색" 버튼도 나중에 이 함수를 쓴다)
-  // 서버는 "중심 + 반경"으로 찾으므로, 지도 가운데를 중심으로 화면 모서리까지 닿는 반경을 쓴다.
-  const searchArea = async (target: kakao.maps.Map) => {
-    const center = target.getCenter();
-    const radiusM = distanceBetween(center, target.getBounds().getNorthEast());
-    // 다시 조회할지 판단할 때는 실제로 검색한 반경(최소 1km 적용)을 기준으로 한다.
-    lastSearch.current = { center, radiusM: toRequestRadius(radiusM), level: target.getLevel() };
+  // 주어진 영역(중심 + 반경)으로 장소를 조회한다.
+  const fetchArea = async (area: { latitude: number; longitude: number; radiusM: number }) => {
+    lastSearch.current = area;
     const requestId = ++latestRequest.current;
     try {
       const result = await getNearbyPlaces({
-        latitude: center.getLat(),
-        longitude: center.getLng(),
-        radiusM,
-        // 지도 이동 후 타이머로 불릴 때도 지금 언어를 쓰도록 ref에서 읽는다.
+        ...area,
+        // 늦게 불려도 지금 언어를 쓰도록 ref에서 읽는다.
         language: languageRef.current,
       });
       if (requestId !== latestRequest.current) return;
@@ -90,32 +78,24 @@ export default function MapPage() {
     }
   };
 
-  // 앱 진입 시 현재 영역을 한 번 자동으로 조회한다.
+  // 지도에 지금 보이는 영역으로 장소를 조회한다. (내 위치가 아니라 지도 화면 기준)
+  // 서버는 "중심 + 반경"으로 찾으므로, 지도 가운데를 중심으로 화면 모서리까지 닿는 반경을 쓴다.
+  const searchArea = (target: kakao.maps.Map) => {
+    const center = target.getCenter();
+    fetchArea({
+      latitude: center.getLat(),
+      longitude: center.getLng(),
+      radiusM: distanceBetween(center, target.getBounds().getNorthEast()),
+    });
+  };
+
+  // 앱 진입 시 한 번만 자동으로 조회한다. (지도가 내 위치를 중심으로 만들어지므로 내 위치 기준)
+  // 그 뒤로는 지도를 움직여도 조회하지 않고, "이 위치에서 검색" 버튼을 눌러야 조회한다.
   const searchFirstTime = (target: kakao.maps.Map) => {
     if (searchedOnce.current) return;
     searchedOnce.current = true;
     searchArea(target);
   };
-
-  // 지도 이동·확대/축소가 끝날 때마다(idle) 보이는 영역으로 다시 조회한다.
-  // - 연달아 움직이면 마지막 이동이 끝나고 SEARCH_DELAY_MS 뒤에 한 번만 요청한다.
-  // - 확대 수준이 같고 조금만 움직였으면(반경의 MIN_MOVE_RATIO 미만) 다시 요청하지 않는다. (따라가기 중 GPS 흔들림 등)
-  const handleIdle = (target: kakao.maps.Map) => {
-    if (!searchedOnce.current) return searchFirstTime(target);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      const last = lastSearch.current;
-      if (
-        last &&
-        last.level === target.getLevel() &&
-        distanceBetween(last.center, target.getCenter()) < last.radiusM * MIN_MOVE_RATIO
-      )
-        return;
-      searchArea(target);
-    }, SEARCH_DELAY_MS);
-  };
-
-  useEffect(() => () => clearTimeout(searchTimer.current), []);
 
   // 카카오맵은 처음 그려질 때 idle 이벤트를 안 보내기도 해서(지도를 한 번 건드려야 옴),
   // 지도가 만들어지면 화면 배치가 끝난 다음 프레임에 바로 조회한다. idle은 혹시 몰라 그대로 둔다.
@@ -127,11 +107,11 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
-  // 언어를 바꾸면 이름 외의 문구(상태·세부 분류·예절 팁)가 그 언어로 오므로 같은 영역을 다시 조회한다.
+  // 언어를 바꾸면 이름 외의 문구(상태·세부 분류·예절 팁)가 그 언어로 오므로 마지막으로 조회한 영역을 다시 조회한다.
+  // (지도를 옮겼더라도 버튼을 누르기 전이면 지금 화면이 아니라 원래 영역 기준)
   useEffect(() => {
-    if (map && searchedOnce.current) searchArea(map);
+    if (lastSearch.current) fetchArea(lastSearch.current);
     // 언어가 바뀔 때만 다시 조회한다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   // 따라가기 중에는 내 위치가 바뀔 때마다 지도도 따라간다.
@@ -197,7 +177,7 @@ export default function MapPage() {
           myLocation={myLocation}
           onCreate={setMap}
           onDragStart={() => setFollowing(false)}
-          onIdle={handleIdle}
+          onIdle={searchFirstTime}
         >
           {/* 좌표가 없는 장소는 마커 없이 카드로만 보여준다. */}
           {visiblePlaces.map(
@@ -253,7 +233,7 @@ export default function MapPage() {
               ))}
             </div>
           }
-          floatingCenter={<SearchAreaButton />}
+          floatingCenter={<SearchAreaButton onClick={() => map && searchArea(map)} />}
           floating={
             <div className="flex flex-col items-center gap-[min(0.75rem,12px)]">
               <LocationButton onClick={goToMyLocation} />
