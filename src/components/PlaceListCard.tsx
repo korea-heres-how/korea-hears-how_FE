@@ -2,6 +2,7 @@ import arrowOrange from "../assets/map/arrow-orange.svg";
 import know from "../assets/map/know.svg";
 import { useLanguage, useT } from "../contexts/language";
 import { useCategoryLabel, useSubcategoryLabel } from "../contexts/labels";
+import { showDefaultOnError } from "./placeImage";
 import PlaceStatus from "./PlaceStatus";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -70,8 +71,8 @@ export default function PlaceListCard({
             src={imageUrl}
             alt=""
             className="size-full object-cover"
-            // 사진 주소가 깨졌으면 숨겨서 회색 칸을 보여준다.
-            onError={(e) => (e.currentTarget.style.display = "none")}
+            // 사진 주소가 깨졌으면 기본 사진으로 바꾼다.
+            onError={showDefaultOnError}
           />
         )}
         <PlaceStatus

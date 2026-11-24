@@ -11,6 +11,7 @@ import back from "../../assets/mypage/back.svg";
 import bookmarkIcon from "../../assets/scan/bookmark.svg";
 import bookmarkFillIcon from "../../assets/scan/bookmark-fill.svg";
 import AiButton from "../../components/AiButton";
+import { DEFAULT_PLACE_IMAGE, showDefaultOnError } from "../../components/placeImage";
 import { useLanguage, useT } from "../../contexts/language";
 import { useCategoryLabel } from "../../contexts/labels";
 import { myDistanceText, useMyLocation } from "../map/components/useMyLocation";
@@ -75,9 +76,13 @@ export default function PlaceDetailPage() {
     let cancelled = false;
     getPlaceThumbnail(id)
       .then((image) => {
-        if (!cancelled) setImageUrl(image?.url);
+        // 서버에 사진이 없으면 기본 사진
+        if (!cancelled) setImageUrl(image?.url ?? DEFAULT_PLACE_IMAGE);
       })
-      .catch((e) => console.warn(e));
+      .catch((e) => {
+        console.warn(e);
+        if (!cancelled) setImageUrl(DEFAULT_PLACE_IMAGE);
+      });
     return () => {
       cancelled = true;
     };
@@ -118,15 +123,15 @@ export default function PlaceDetailPage() {
 
   return (
     <div className="pb-[min(5rem,80px)]">
-      {/* 사진 (없으면 회색 칸) */}
+      {/* 사진 (불러오는 동안 회색 칸, 없으면 기본 사진) */}
       <div className="relative h-[min(14.375rem,230px)] bg-[#E2E2E2]">
         {imageUrl && (
           <img
             src={imageUrl}
             alt=""
             className="size-full object-cover"
-            // 사진 주소가 깨졌으면 숨겨서 회색 칸을 보여준다.
-            onError={(e) => (e.currentTarget.style.display = "none")}
+            // 사진 주소가 깨졌으면 기본 사진으로 바꾼다.
+            onError={showDefaultOnError}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(43,33,24,0.8)] via-[rgba(43,33,24,0.25)] to-[rgba(43,33,24,0.25)]" />

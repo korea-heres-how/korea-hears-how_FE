@@ -1,5 +1,6 @@
 import type { NearbyPlace } from "../../../api/map/types";
 import arrowOrange from "../../../assets/map/arrow-orange.svg";
+import { showDefaultOnError } from "../../../components/placeImage";
 import PlaceStatus from "../../../components/PlaceStatus";
 import { useLanguage, useT } from "../../../contexts/language";
 import { useCategoryLabel } from "../../../contexts/labels";
@@ -14,7 +15,7 @@ type NearbyPlaceCardProps = {
   onGuideClick: () => void; // 오른쪽 아래 화살표를 누르면 관광지 상세로
 };
 
-// 지도 바텀시트 중간 단계에서 옆으로 넘겨 보는 장소 카드. 사진은 카드가 화면에 보일 때 불러오고, 없으면 회색 칸.
+// 지도 바텀시트 중간 단계에서 옆으로 넘겨 보는 장소 카드. 사진은 카드가 화면에 보일 때 불러오고(그 전엔 회색 칸), 없으면 기본 사진.
 export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideClick }: NearbyPlaceCardProps) {
   const t = useT();
   const { language } = useLanguage();
@@ -43,8 +44,8 @@ export default function NearbyPlaceCard({ place, distanceText, onClick, onGuideC
             src={imageUrl}
             alt=""
             className="size-full object-cover"
-            // 사진 주소가 깨졌으면 숨겨서 회색 칸을 보여준다.
-            onError={(e) => (e.currentTarget.style.display = "none")}
+            // 사진 주소가 깨졌으면 기본 사진으로 바꾼다.
+            onError={showDefaultOnError}
           />
         )}
         <PlaceStatus
