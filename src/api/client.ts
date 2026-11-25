@@ -7,6 +7,12 @@
 // 배포할 때는 .env의 VITE_API_BASE_URL에 서버 주소를 넣는다. (서버에 CORS 허용이 필요)
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
+// 서버가 주는 상대경로(예: 프로필 사진 "/api/profile-images/…png")를 화면에 띄울 주소로 바꾼다.
+// "/"로 시작하면 서버 주소를 붙이고, 이미 전체 주소(https://…)면 그대로 둔다.
+export function toServerUrl(path: string) {
+  return path.startsWith("/") ? `${BASE_URL}${path}` : path;
+}
+
 // 서버가 내려주는 공통 응답 형태
 type ApiResponse<T> = {
   success: boolean;
