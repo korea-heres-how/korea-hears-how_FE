@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router";
-import { EmailTakenError } from "../../../api/auth";
 import { useT } from "../../../contexts/language";
 import AuthField from "./AuthField";
 import {
@@ -23,7 +22,7 @@ type EmailInputStepProps = {
   loginPrompt: string;
   // 다음 단계에서 뒤로 오면 입력했던 이메일을 그대로 보여준다.
   initialEmail: string;
-  // 인증번호 보내기. 이미 가입된 이메일이면 EmailTakenError, 그 밖의 실패도 오류를 던진다.
+  // 인증번호 보내기. 실패하면 오류를 던진다.
   onNext: (email: string) => Promise<void>;
 };
 
@@ -40,12 +39,11 @@ export default function EmailInputStep({
   const t = useT();
   const [email, setEmail] = useState(initialEmail);
   // 오류 종류만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
-  const [error, setError] = useState<"" | "empty" | "invalid" | "taken">("");
+  const [error, setError] = useState<"" | "empty" | "invalid">("");
   const errorMessage = {
     "": "",
     empty: t("이메일을 입력해주세요.", "Please enter your email."),
     invalid: t("올바른 이메일 형식이 아니에요.", "Please enter a valid email address."),
-    taken: t("이미 가입된 이메일이에요.", "This email is already registered."),
   }[error];
   const [loading, setLoading] = useState(false);
 
@@ -57,9 +55,8 @@ export default function EmailInputStep({
     setLoading(true);
     try {
       await onNext(value);
-    } catch (e) {
-      // 그 밖의 실패 안내는 페이지가 위쪽 팝업으로 보여준다.
-      if (e instanceof EmailTakenError) setError("taken");
+    } catch {
+      // 실패 안내는 페이지가 위쪽 팝업으로 보여준다.
     } finally {
       setLoading(false);
     }

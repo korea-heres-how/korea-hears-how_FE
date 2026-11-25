@@ -1,3 +1,4 @@
+import { useState } from "react";
 import done from "../../../assets/auth/done.svg";
 import { type Language, useLanguage, useT } from "../../../contexts/language";
 import { primaryButtonClassName } from "./authStyles";
@@ -9,11 +10,24 @@ const LANGUAGES = [
   { id: "ko", badge: "한", label: "한국어", sub: "한국어 안내" },
 ] as const satisfies readonly { id: Language; badge: string; label: string; sub: string }[];
 
-// 회원가입을 마친 뒤 언어 고르기. 앱 언어(LanguageProvider)와 같은 값이라 고르면 앱 전체가 바로 바뀐다.
-// 따로 고르지 않고 넘어가면 지금 앱 언어(기본값 한국어)가 그대로 유지된다.
-export default function LanguageStep({ onNext }: { onNext: () => void }) {
+// 회원가입 마지막 단계: 언어 고르기. 앱 언어(LanguageProvider)와 같은 값이라 고르면 앱 전체가 바로 바뀐다.
+// 따로 고르지 않고 넘어가면 지금 앱 언어(기본값 한국어)가 그대로 유지되고, 이 값으로 가입 요청을 보낸다.
+// onNext는 가입 요청이라 실패하면 오류를 던진다. (실패 안내는 SignupPage가 위쪽 팝업으로)
+export default function LanguageStep({ onNext }: { onNext: () => Promise<void> }) {
   const t = useT();
   const { language: selected, setLanguage: setSelected } = useLanguage();
+  const [loading, setLoading] = useState(false);
+
+  const handleNext = async () => {
+    setLoading(true);
+    try {
+      await onNext();
+    } catch {
+      // 실패 안내는 SignupPage가 위쪽 팝업으로 보여준다.
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="rounded-[min(1.125rem,18px)] border border-[rgba(255,255,255,0.7)] bg-[rgba(255,255,255,0.95)] p-[min(1.3125rem,21px)] text-center">
@@ -75,7 +89,7 @@ export default function LanguageStep({ onNext }: { onNext: () => void }) {
         {t("언제든 마이페이지에서 바꿀 수 있어요.", "You can change this anytime in My Page.")}
       </p>
       <div className="pt-[min(1.25rem,20px)]">
-        <button type="button" onClick={onNext} className={primaryButtonClassName}>
+        <button type="button" onClick={handleNext} disabled={loading} className={primaryButtonClassName}>
           {t("다음", "Next")}
         </button>
       </div>

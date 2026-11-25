@@ -25,7 +25,7 @@ type VerifyCodeStepProps = {
   email: string;
   // 제목 아래 안내 문장 (비밀번호 찾기 / 회원가입마다 다르다)
   description: ReactNode;
-  // 인증번호 확인. 틀리면 InvalidCodeError를 던진다.
+  // 인증번호 확인. 틀리거나 만료되면 InvalidCodeError(reason)를 던진다.
   onVerify: (code: string) => Promise<void>;
   // 인증번호 다시 보내기. 실패하면 오류를 던진다.
   onResend: () => Promise<void>;
@@ -41,17 +41,21 @@ export default function VerifyCodeStep({
   const t = useT();
   const [code, setCode] = useState("");
   // 오류 종류만 저장해서, 언어를 바꾸면 오류 문구도 같이 바뀌게 한다.
-  const [error, setError] = useState<"" | "expired" | "short" | "wrong">("");
+  const [error, setError] = useState<"" | "expired" | "short" | "wrong" | "tooMany">("");
   const errorMessage = {
     "": "",
     expired: t(
       "인증 시간이 만료되었어요. 인증번호를 다시 보내주세요.",
       "The code has expired. Please request a new one.",
     ),
-    short: t("인증번호 4~6자리를 입력해주세요.", "Please enter the 4–6 digit code."),
+    short: t("인증번호 6자리를 입력해주세요.", "Please enter the 6-digit code."),
     wrong: t(
       "인증번호가 올바르지 않아요. 다시 확인해주세요.",
       "That code isn't correct. Please check it again.",
+    ),
+    tooMany: t(
+      "입력 횟수를 넘었어요. 인증번호를 다시 보내주세요.",
+      "Too many attempts. Please request a new code.",
     ),
   }[error];
   const [loading, setLoading] = useState(false);
@@ -67,13 +71,14 @@ export default function VerifyCodeStep({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (expired) return setError("expired");
-    if (code.length < 4) return setError("short");
+    // 서버는 숫자 6자리만 받는다.
+    if (code.length < 6) return setError("short");
     setLoading(true);
     try {
       await onVerify(code);
     } catch (e) {
       // 그 밖의 실패 안내는 FindPasswordPage가 위쪽 팝업으로 보여준다.
-      if (e instanceof InvalidCodeError) setError("wrong");
+      if (e instanceof InvalidCodeError) setError(e.reason);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, useRef } from "react";
 import camera from "../../../assets/auth/camera.svg";
 import { useT } from "../../../contexts/language";
 import { primaryButtonClassName, stepSubtitleClassName, stepTitleClassName } from "./authStyles";
@@ -11,19 +11,41 @@ const smallButtonClassName =
 // 고른 사진 파일과 미리보기 주소
 export type ProfilePhoto = { file: File; url: string };
 
+// 서버가 받는 프로필 사진 조건: JPG/PNG, 최대 2MiB, 한 변 2048px 이하, 총 400만 픽셀 이하
+const PHOTO_TYPES = ["image/jpeg", "image/png"];
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const MAX_PHOTO_SIDE = 2048;
+const MAX_PHOTO_PIXELS = 4_000_000;
+
+// 미리보기 주소로 사진 크기를 읽어 서버 조건에 맞는지 본다. (읽지 못하면 깨진 파일로 본다)
+function fitsPhotoSize(url: string) {
+  return new Promise<boolean>((resolve) => {
+    const img = new Image();
+    img.onload = () =>
+      resolve(
+        img.naturalWidth <= MAX_PHOTO_SIDE &&
+          img.naturalHeight <= MAX_PHOTO_SIDE &&
+          img.naturalWidth * img.naturalHeight <= MAX_PHOTO_PIXELS,
+      );
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
 type ProfileStepProps = {
   name: string;
   // 고른 사진은 앞 단계로 갔다 와도 남도록 SignupPage가 들고 있다.
   photo: ProfilePhoto | null;
   onPhotoChange: (photo: ProfilePhoto | null) => void;
-  // 가입 요청. 실패하면 오류를 던진다.
-  onSubmit: () => Promise<void>;
+  // 조건(JPG/PNG, 2MB, 2048px)에 맞지 않는 사진을 골랐을 때 (안내는 SignupPage가 팝업으로)
+  onInvalidPhoto: () => void;
+  // 다음 단계(언어 선택)로. 사진 업로드와 가입 요청은 언어를 고른 뒤 한꺼번에 한다.
+  onNext: () => void;
 };
 
 // 회원가입 5단계: 프로필 사진 고르기 (사진이 없으면 이름 첫 글자를 보여준다)
-export default function ProfileStep({ name, photo, onPhotoChange, onSubmit }: ProfileStepProps) {
+export default function ProfileStep({ name, photo, onPhotoChange, onInvalidPhoto, onNext }: ProfileStepProps) {
   const t = useT();
-  const [loading, setLoading] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
 
   // 사진을 바꾸면 이전 미리보기 주소는 해제한다.
@@ -32,24 +54,20 @@ export default function ProfileStep({ name, photo, onPhotoChange, onSubmit }: Pr
     onPhotoChange(next);
   };
 
-  const choosePhoto = (e: ChangeEvent<HTMLInputElement>) => {
+  const choosePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (file) changePhoto({ file, url: URL.createObjectURL(file) });
+    if (!file) return;
+    if (!PHOTO_TYPES.includes(file.type) || file.size > MAX_PHOTO_BYTES) return onInvalidPhoto();
+    const url = URL.createObjectURL(file);
+    if (!(await fitsPhotoSize(url))) {
+      URL.revokeObjectURL(url);
+      return onInvalidPhoto();
+    }
+    changePhoto({ file, url });
   };
 
   const openPicker = () => photoInput.current?.click();
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      await onSubmit();
-    } catch {
-      // 실패 안내는 SignupPage가 위쪽 팝업으로 보여준다.
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div>
@@ -71,7 +89,7 @@ export default function ProfileStep({ name, photo, onPhotoChange, onSubmit }: Pr
             <img src={camera} alt="" style={{ width: size(16), height: size(15) }} />
           </button>
         </div>
-        <input ref={photoInput} type="file" accept="image/*" onChange={choosePhoto} className="hidden" />
+        <input ref={photoInput} type="file" accept="image/jpeg,image/png" onChange={choosePhoto} className="hidden" />
 
         <div className="flex gap-[min(0.5rem,8px)] pt-[min(1rem,16px)]">
           <button type="button" onClick={openPicker} className={smallButtonClassName}>
@@ -95,7 +113,7 @@ export default function ProfileStep({ name, photo, onPhotoChange, onSubmit }: Pr
       </div>
 
       <div className="pt-[min(1.75rem,28px)]">
-        <button type="button" onClick={handleSubmit} disabled={loading} className={primaryButtonClassName}>
+        <button type="button" onClick={onNext} className={primaryButtonClassName}>
           {t("다음", "Next")}
         </button>
       </div>
