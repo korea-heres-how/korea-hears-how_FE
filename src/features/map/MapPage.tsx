@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { getNearbyPlaces } from "../../api/map/nearby";
 import type { NearbyPlace } from "../../api/map/types";
 import arrowOrange from "../../assets/map/arrow-orange.svg";
 import AiButton from "../../components/AiButton";
 import ErrorToast from "../../components/ErrorToast";
 import { useLanguage, useT } from "../../contexts/language";
+import { useNearbyPlaces } from "../../contexts/nearby";
 import BottomSheet from "./components/BottomSheet";
 import Header, { type Category } from "./components/header";
 import KakaoMap from "./components/KakaoMap";
@@ -38,51 +38,28 @@ export default function MapPage() {
   // 따라가기 모드: 현재 위치 버튼을 누르면 켜지고, 지도를 끌면 꺼진다.
   const [following, setFollowing] = useState(false);
 
-  const [places, setPlaces] = useState<NearbyPlace[]>([]);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const closeToast = useCallback(() => setLoadFailed(false), []);
-  // 언어를 바꾸는 등 조회가 겹치면 마지막 요청의 결과만 쓴다.
-  const latestRequest = useRef(0);
-  // 마커와 바텀시트 카드가 같이 쓰는 선택 상태
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const searchedOnce = useRef(false);
-  // 마지막으로 조회한 영역 (언어를 바꾸면 이 영역을 그대로 다시 조회한다)
-  const lastSearch = useRef<{ latitude: number; longitude: number; radiusM: number } | null>(null);
-  const languageRef = useRef(language);
-  useEffect(() => {
-    languageRef.current = language;
-  }, [language]);
+  // 조회 결과는 주변 탭과 같이 쓴다. (언어를 바꾸면 마지막 영역을 다시 조회하는 것도 여기서 한다)
+  const { places, area, status, search, dismissError } = useNearbyPlaces();
+  // 마커와 바텀시트 카드가 같이 쓰는 선택 상태.
+  // 다시 조회해서 고른 장소가 새 결과에 없으면 선택이 풀린 것으로 본다. (카드를 눌러 지도가 옮겨진 경우처럼 새 결과에도 있으면 유지)
+  const [pickedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = places.some((place) => place.id === pickedId) ? pickedId : null;
+  // 다른 탭에 갔다 왔으면 이미 조회한 결과가 있으니 다시 조회하지 않고, 지도도 그 영역 가운데에서 시작한다.
+  // (조회에 실패한 상태였다면 다시 조회한다)
+  const [reused] = useState(() => area !== null && status !== "error");
+  const searchedOnce = useRef(reused);
+  const [initialCenter] = useState(() =>
+    reused && area ? { lat: area.latitude, lng: area.longitude } : undefined,
+  );
   // 헤더 카테고리 탭: 마커와 카드를 함께 거른다.
   const [category, setCategory] = useState<Category>("전체");
   const carouselRef = useRef<HTMLDivElement>(null);
-
-  // 주어진 영역(중심 + 반경)으로 장소를 조회한다.
-  const fetchArea = async (area: { latitude: number; longitude: number; radiusM: number }) => {
-    lastSearch.current = area;
-    const requestId = ++latestRequest.current;
-    try {
-      const result = await getNearbyPlaces({
-        ...area,
-        // 늦게 불려도 지금 언어를 쓰도록 ref에서 읽는다.
-        language: languageRef.current,
-      });
-      if (requestId !== latestRequest.current) return;
-      setPlaces(result);
-      // 카드를 눌러 지도가 옮겨진 경우처럼, 고른 장소가 새 결과에도 있으면 선택을 유지한다.
-      setSelectedId((prev) => (result.some((place) => place.id === prev) ? prev : null));
-    } catch (e) {
-      if (requestId !== latestRequest.current) return;
-      console.error(e);
-      setPlaces([]);
-      setLoadFailed(true);
-    }
-  };
 
   // 지도에 지금 보이는 영역으로 장소를 조회한다. (내 위치가 아니라 지도 화면 기준)
   // 서버는 "중심 + 반경"으로 찾으므로, 지도 가운데를 중심으로 화면 모서리까지 닿는 반경을 쓴다.
   const searchArea = (target: kakao.maps.Map) => {
     const center = target.getCenter();
-    fetchArea({
+    search({
       latitude: center.getLat(),
       longitude: center.getLng(),
       radiusM: distanceBetween(center, target.getBounds().getNorthEast()),
@@ -106,13 +83,6 @@ export default function MapPage() {
     // searchFirstTime은 searchedOnce로 한 번만 동작하므로 map이 생길 때만 실행하면 된다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
-
-  // 언어를 바꾸면 이름 외의 문구(상태·세부 분류·예절 팁)가 그 언어로 오므로 마지막으로 조회한 영역을 다시 조회한다.
-  // (지도를 옮겼더라도 버튼을 누르기 전이면 지금 화면이 아니라 원래 영역 기준)
-  useEffect(() => {
-    if (lastSearch.current) fetchArea(lastSearch.current);
-    // 언어가 바뀔 때만 다시 조회한다.
-  }, [language]);
 
   // 따라가기 중에는 내 위치가 바뀔 때마다 지도도 따라간다.
   useEffect(() => {
@@ -165,16 +135,17 @@ export default function MapPage() {
   return (
     // 화면 높이에서 하단 Nav(App의 main 아래 여백)만큼 뺀 높이를 헤더 + 지도가 나눠 쓴다.
     <div className="flex h-[calc(100svh-min(3.8125rem,61px)-env(safe-area-inset-bottom))] flex-col">
-      {loadFailed && (
+      {status === "error" && (
         <ErrorToast
           message={t("주변 장소를 불러오지 못했어요", "Couldn't load nearby places.")}
-          onClose={closeToast}
+          onClose={dismissError}
         />
       )}
       <Header onCategoryChange={changeCategory} />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <KakaoMap
           myLocation={myLocation}
+          initialCenter={initialCenter}
           onCreate={setMap}
           onDragStart={() => setFollowing(false)}
           onIdle={searchFirstTime}

@@ -24,6 +24,7 @@ function toNearbyPlace(card: LocalizedCard): NearbyPlace {
     subcategory: card.category.detail_label ?? "",
     status: card.business_status.label,
     statusColor: card.business_status.color,
+    open: card.business_status.state === "open",
     tip: card.etiquette_preview ?? "",
     position: card.location ? { lat: card.location.latitude, lng: card.location.longitude } : null,
   };

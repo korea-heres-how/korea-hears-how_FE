@@ -4,7 +4,10 @@ import {
   saveMockPhrase,
   unsaveMockPhrase,
 } from "./mocks/phrases";
-import type { Place } from "./places";
+import type { NearbyPlace } from "./map/types";
+
+// 장소 분류 (관광지·문화시설·음식점·시장·카페)
+type PlaceCategory = Exclude<NearbyPlace["category"], "기타">;
 
 // 여러 화면(안내문 해석, 관광지 상세 등)에 나오는 "이렇게 말해보세요" 한국어 표현 한 개
 export type Phrase = {
@@ -16,11 +19,11 @@ export type Phrase = {
 };
 
 // 보관함 분류는 지도 화면 카테고리와 같다. 분류가 없는 표현(안내문 해석 등)은 "기타"로 묶는다.
-export type PhraseCategory = Place["category"] | "기타";
+export type PhraseCategory = PlaceCategory | "기타";
 
 // 오프라인 표현 보관함에 저장된 표현
 export type SavedPhrase = Phrase & {
-  category?: Place["category"]; // 어느 분류의 장소에서 저장했는지. 없으면 "기타"
+  category?: PlaceCategory; // 어느 분류의 장소에서 저장했는지. 없으면 "기타"
 };
 
 // [임시] 서버 연결 전까지는 true. 서버가 준비되면 false로 바꾸고 mocks/phrases.ts를 지운다.

@@ -7,6 +7,8 @@ const DEFAULT_LEVEL = 2;
 
 type KakaoMapProps = {
   myLocation: MyLocationState;
+  // 처음 지도 가운데. 주면 내 위치를 기다리지 않고 바로 이 위치로 지도를 만든다. (탭을 오가며 이전 조회 영역을 다시 보여줄 때)
+  initialCenter?: LatLng;
   // 지도 객체가 만들어지면 넘겨준다. (현재 위치 버튼에서 panTo로 이동할 때 사용)
   onCreate?: (map: kakao.maps.Map) => void;
   // 사용자가 지도를 끌기 시작하면 알린다. (따라가기 모드 끄기)
@@ -19,6 +21,7 @@ type KakaoMapProps = {
 
 export default function KakaoMap({
   myLocation,
+  initialCenter,
   onCreate,
   onDragStart,
   onIdle,
@@ -29,9 +32,9 @@ export default function KakaoMap({
     appkey: import.meta.env.VITE_KAKAO_JS_KEY,
   });
 
-  // 앱 진입 시 처음 받은 위치(또는 기본 위치)로 한 번만 지도를 옮긴다.
+  // 앱 진입 시 처음 받은 위치(또는 기본 위치)로 한 번만 지도를 옮긴다. (initialCenter가 있으면 그 위치)
   // 이후에는 위치가 바뀌어도 지도는 그대로 두고 파란 점만 움직인다. (따라가기 모드일 때는 MapPage에서 지도를 옮긴다)
-  const [center, setCenter] = useState<LatLng | null>(null);
+  const [center, setCenter] = useState<LatLng | null>(initialCenter ?? null);
   if (center === null && myLocation.status !== "loading") {
     setCenter(myLocation.position);
   }

@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { formatKm, formatWalk, getNearbyPlaces, type Place } from "../../api/places";
+import { MIN_RADIUS_M } from "../../api/map/nearby";
 import distanceIcon from "../../assets/around/distance.svg";
 import nameIcon from "../../assets/around/name.svg";
 import searchIcon from "../../assets/around/search.svg";
 import timeIcon from "../../assets/around/time.svg";
 import AiButton from "../../components/AiButton";
 import CategoryChips from "../../components/CategoryChips";
-import PlaceListCard from "../../components/PlaceListCard";
+import ErrorToast from "../../components/ErrorToast";
 import { useLanguage, useT } from "../../contexts/language";
+import { useNearbyPlaces } from "../../contexts/nearby";
+import NearbyListCard from "../map/components/NearbyListCard";
+import { distanceM, myDistanceText, useMyLocation } from "../map/components/useMyLocation";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -17,24 +20,31 @@ const FILTERS = ["전체", "관광지", "문화시설", "음식점", "시장", "
 type Filter = (typeof FILTERS)[number];
 type Sort = "distance" | "name";
 
-// 하단 Nav "주변" 탭 (/list). 지도에서 보는 장소를 목록으로 보여준다.
-// 검색어·분류·영업 중 필터를 함께 적용하고, 가까운 순 또는 이름순으로 정렬한다.
+// 하단 Nav "주변" 탭 (/list). 지도에서 마지막으로 조회한 장소를 그대로 목록으로 보여준다. (지도와 같은 조회 결과를 공유)
+// 지도를 거치지 않고 바로 들어왔으면 내 위치 주변(반경 1km)으로 조회한다.
+// 검색어·분류·영업 중 필터를 함께 적용하고, 가까운 순(내 위치 기준) 또는 이름순으로 정렬한다.
 // "여기서는? 가이드"를 누르면 관광지 상세로 간다. 카드 자체를 누르는 동작은 없다.
 export default function AroundPage() {
   const navigate = useNavigate();
   const t = useT();
   const { language } = useLanguage();
-  const [places, setPlaces] = useState<Place[]>([]);
+  const myLocation = useMyLocation();
+  const { places, area, status, search, dismissError } = useNearbyPlaces();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("전체");
   const [sort, setSort] = useState<Sort>("distance");
   const [openOnly, setOpenOnly] = useState(false);
 
+  // 아직 한 번도 조회하지 않았으면(지도를 안 거치고 들어옴) 내 위치를 받는 대로 그 주변을 조회한다.
   useEffect(() => {
-    getNearbyPlaces()
-      .then(setPlaces)
-      .catch((e) => console.error(e));
-  }, []);
+    if (area !== null || myLocation.status === "loading") return;
+    const { lat, lng } = myLocation.position;
+    search({ latitude: lat, longitude: lng, radiusM: MIN_RADIUS_M });
+  }, [area, myLocation, search]);
+
+  // 가까운 순 정렬용 거리(m). 위치 권한이 없으면 서버가 준 순서(조회 영역 가운데에서 가까운 순)를 그대로 쓴다.
+  const distanceOf = (position: { lat: number; lng: number } | null) =>
+    myLocation.status === "success" && position ? distanceM(myLocation.position, position) : Infinity;
 
   // 분류 칩 개수는 검색어·영업 중 필터를 적용한 뒤의 개수로 보여준다.
   const keyword = query.trim().toLowerCase();
@@ -49,10 +59,25 @@ export default function AroundPage() {
 
   const visible = searched
     .filter((place) => filter === "전체" || place.category === filter)
-    .sort((a, b) => (sort === "distance" ? a.distanceM - b.distanceM : a.title.localeCompare(b.title, "ko")));
+    // 이름순은 지금 언어의 큰 이름 기준
+    .sort((a, b) =>
+      sort === "distance"
+        ? distanceOf(a.position) - distanceOf(b.position)
+        : language === "en"
+          ? a.titleEn.localeCompare(b.titleEn, "en")
+          : a.title.localeCompare(b.title, "ko"),
+    );
+  // 처음 조회 중이라 아직 한 장소도 없을 때는 "없어요" 대신 불러오는 중이라고 보여준다.
+  const loadingFirst = places.length === 0 && (status === "loading" || area === null);
 
   return (
     <div className="px-[min(1rem,16px)] pt-[min(1.5rem,24px)] pb-[min(5rem,80px)]">
+      {status === "error" && (
+        <ErrorToast
+          message={t("주변 장소를 불러오지 못했어요", "Couldn't load nearby places.")}
+          onClose={dismissError}
+        />
+      )}
       <header className="pb-[min(1rem,16px)]">
         <h1 className="text-[min(1.625rem,26px)] leading-[min(2.03rem,32.5px)] font-bold tracking-[-0.025em] text-[#2B2118]">
           {t("주변 장소", "Nearby Places")}
@@ -109,26 +134,33 @@ export default function AroundPage() {
       {/* 장소 목록 */}
       {visible.length === 0 ? (
         <p className="py-[min(1.5rem,24px)] text-center text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] text-[rgba(43,33,24,0.35)]">
-          {t("찾는 장소가 없어요.", "No places found.")}
+          {loadingFirst
+            ? t("주변 장소를 불러오는 중이에요…", "Loading nearby places…")
+            : t("찾는 장소가 없어요.", "No places found.")}
         </p>
       ) : (
         <div className="flex flex-col gap-[min(0.75rem,12px)] pt-[min(1rem,16px)]">
-          {visible.map((place) => (
-            <PlaceListCard
-              key={place.contentid}
-              title={place.title}
-              titleEn={place.titleEn}
-              category={place.category}
-              subcategory={place.subcategory}
-              status={place.status}
-              busy={place.busy}
-              tip={place.tip}
-              imageUrl={place.imageUrl}
-              distanceText={formatKm(place)}
-              walkText={formatWalk(place, language)}
-              onGuideClick={() => navigate(`/place/${place.contentid}`)}
-            />
-          ))}
+          {visible.map((place) => {
+            // 위치 권한이 없거나 좌표가 없으면 거리를 숨긴다.
+            const distance = myDistanceText(myLocation, place.position, language);
+            return (
+              // 사진은 카드가 화면에 보일 때 불러오고, 없으면 기본 사진 (지도 목록 카드와 같다)
+              <NearbyListCard
+                key={place.id}
+                placeId={place.id}
+                title={place.title}
+                titleEn={place.titleEn}
+                category={place.category}
+                subcategory={place.subcategory}
+                status={place.status}
+                statusColor={place.statusColor}
+                tip={place.tip}
+                distanceText={distance?.km}
+                walkText={distance?.walk}
+                onGuideClick={() => navigate(`/place/${place.id}`)}
+              />
+            );
+          })}
         </div>
       )}
 

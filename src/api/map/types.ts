@@ -9,6 +9,7 @@ export type NearbyPlace = {
   subcategory: string; // 세부 분류 — 요청한 언어로 온다 (없으면 "")
   status: string; // 운영 상태 문구 — 요청한 언어로 온다
   statusColor: StatusColor; // 상태 점 색
+  open: boolean; // 지금 영업 중인지 (business_status.state === "open") — 주변 탭 "영업 중" 필터
   tip: string; // Know before you go (예절 미리보기, 없으면 "")
   position: { lat: number; lng: number } | null; // 좌표가 없으면 마커를 못 그리고 거리도 숨긴다
   // 거리는 서버 값(지도 가운데 기준) 대신 내 위치로 프론트에서 계산한다. (useMyLocation의 myDistanceText)
