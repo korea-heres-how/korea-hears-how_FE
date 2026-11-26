@@ -37,3 +37,10 @@ export async function uploadProfileImage(file: File): Promise<string> {
 export async function deleteProfileImage(): Promise<void> {
   await apiRequest<null>("/api/users/me/profile-image", { method: "DELETE" });
 }
+
+// DELETE /api/users/me (본문 없음)
+// 회원 탈퇴. 탈퇴하면 그 계정의 모든 토큰이 서버에서 거부되고, 같은 이메일로 다시 가입할 수 없다.
+// 탈퇴 뒤에는 서버에 로그아웃을 보내지 않고 앱에서만 로그인 정보를 지운다. (AuthProvider의 logout)
+export async function deleteAccount(): Promise<void> {
+  await apiRequest<null>("/api/users/me", { method: "DELETE" });
+}

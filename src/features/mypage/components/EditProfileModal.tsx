@@ -1,8 +1,7 @@
 import { type ChangeEvent, type InputHTMLAttributes, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiError } from "../../../api/client";
-import { deleteAccount } from "../../../api/mypage";
-import { deleteProfileImage, updateMe, uploadProfileImage } from "../../../api/mypage/me";
+import { deleteAccount, deleteProfileImage, updateMe, uploadProfileImage } from "../../../api/mypage/me";
 import type { Profile } from "../../../api/mypage/types";
 import arrowG from "../../../assets/mypage/arrow-g.svg";
 import deleteAccountIcon from "../../../assets/mypage/delete-account.svg";
@@ -273,8 +272,8 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
         <ConfirmDialog
           title={t("정말 탈퇴하시겠어요?", "Delete your account?")}
           message={t(
-            "계정을 삭제하면 즐겨찾기와 스캔한 안내문 기록이 모두 사라지고 되돌릴 수 없어요.",
-            "Deleting your account removes all your favorites and scanned signs. This can't be undone.",
+            "계정을 삭제하면 즐겨찾기와 스캔한 안내문 기록이 모두 사라지고 되돌릴 수 없어요. 탈퇴한 이메일로는 다시 가입할 수 없어요.",
+            "Deleting your account removes all your favorites and scanned signs. This can't be undone, and you won't be able to sign up again with the same email.",
           )}
           confirmLabel={t("회원 탈퇴", "Delete account")}
           busy={deleting}
