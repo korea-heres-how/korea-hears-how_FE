@@ -1,7 +1,7 @@
 import type { FeedbackResult } from "./feedback";
 import { sendMockScanFeedback } from "./mocks/scan";
 
-// 안내문 해석은 서버에 연결됨 → api/scan/analyze.ts (텍스트만)
+// 안내문 해석(사진·텍스트)은 서버에 연결됨 → api/scan/analyze.ts
 
 // 해석 피드백. 어떤 해석인지(scanId)와 피드백 내용을 함께 보낸다.
 export type ScanFeedback = { scanId: string } & FeedbackResult;

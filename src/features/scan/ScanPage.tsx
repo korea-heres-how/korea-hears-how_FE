@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { analyzeSignText, SignNotRecognizedError } from "../../api/scan/analyze";
+import { analyzeSign, SignImageRejectedError, SignNotRecognizedError } from "../../api/scan/analyze";
 import type { LocalizedText, SignExplanation } from "../../api/scan/types";
 import aiIcon from "../../assets/all/ai.svg";
 import AiButton from "../../components/AiButton";
@@ -28,7 +28,7 @@ export default function ScanPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [text, setText] = useState("");
   // 팝업 종류만 저장해서, 언어를 바꾸면 문구도 같이 바뀌게 한다.
-  const [toast, setToast] = useState<"" | "onlyOne" | "failed" | "photoSoon" | "notSign">("");
+  const [toast, setToast] = useState<"" | "onlyOne" | "failed" | "photoInvalid" | "photoTooLarge" | "notSign">("");
   // 안내문으로 인식하지 못했을 때 서버가 준 한/영 안내 문구 (없으면 기본 문구)
   const [notSignMessage, setNotSignMessage] = useState<LocalizedText | null>(null);
   const closeToast = useCallback(() => setToast(""), []);
@@ -37,15 +37,19 @@ export default function ScanPage() {
     "": "",
     onlyOne: t("이미지 또는 텍스트 중 하나만 입력할 수 있어요", "You can enter either an image or text, not both."),
     failed: t("해석하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't explain the sign. Please try again in a moment."),
-    photoSoon: t(
-      "사진 해석은 준비 중이에요. 안내문 내용을 텍스트로 입력해 주세요.",
-      "Photo scanning is coming soon. Please type the text on the sign.",
+    photoInvalid: t(
+      "이 사진은 해석할 수 없어요. JPG·PNG·WebP 사진으로 다시 골라 주세요.",
+      "We can't read this photo. Please choose a JPG, PNG, or WebP image.",
+    ),
+    photoTooLarge: t(
+      "사진이 너무 커요. 더 작은 사진으로 다시 골라 주세요.",
+      "This photo is too large. Please choose a smaller one.",
     ),
     notSign: notSignMessage
       ? t(notSignMessage.ko, notSignMessage.en)
       : t(
-          "안내문으로 인식하지 못했어요. 안내문 내용을 다시 확인해 주세요.",
-          "We couldn't recognize this as a sign. Please check the text and try again.",
+          "안내문으로 인식하지 못했어요. 사진이나 내용을 다시 확인해 주세요.",
+          "We couldn't recognize this as a sign. Please check the photo or text and try again.",
         ),
   }[toast];
 
@@ -58,19 +62,16 @@ export default function ScanPage() {
 
   const submit = async () => {
     if (!canSubmit) return;
-    // [임시] 사진 해석은 아직 서버에 연결하지 않아서 안내만 띄운다.
-    if (photo) {
-      setToast("photoSoon");
-      return;
-    }
     setExplaining(true);
     try {
-      setResult(await analyzeSignText(text.trim()));
+      setResult(await analyzeSign(photo ? { photo } : { text: text.trim() }));
     } catch (e) {
       console.error(e);
       if (e instanceof SignNotRecognizedError) {
         setNotSignMessage(e.serverMessage);
         setToast("notSign");
+      } else if (e instanceof SignImageRejectedError) {
+        setToast(e.reason === "tooLarge" ? "photoTooLarge" : "photoInvalid");
       } else {
         setToast("failed");
       }

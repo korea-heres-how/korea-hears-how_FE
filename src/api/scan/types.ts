@@ -21,6 +21,7 @@ export type LocalizedText = { ko: string; en: string };
 // POST /api/signs/analyze 응답 data (Detail) 중 화면에서 쓰는 필드만.
 // status가 "ok"일 때만 저장돼서 scanId가 오고, unreadable/not_a_sign이면 scanId가 null이다.
 // (sourceType, notice, thumbnailUrl, createdAt도 오지만 아직 쓰는 화면이 없어서 뺐다)
+// 사진으로 보내도 같은 형태로 온다. (originalText는 사진에서 읽어낸 글자)
 export type SignAnalysisResponse = {
   scanId: number | null;
   status: string; // "ok" | "unreadable" | "not_a_sign"

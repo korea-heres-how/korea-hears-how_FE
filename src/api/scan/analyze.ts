@@ -1,4 +1,4 @@
-import { apiRequest } from "../client";
+import { ApiError, apiRequest } from "../client";
 import type { LocalizedText, SignAnalysisResponse, SignExplanation } from "./types";
 
 // 서버가 안내문으로 인식하지 못했을 때(unreadable / not_a_sign) 던지는 오류.
@@ -15,10 +15,44 @@ export class SignNotRecognizedError extends Error {
   }
 }
 
-// POST /api/signs/analyze { text }
-// 텍스트(1~500자)로 안내문을 해석한다. 사진 해석은 아직 연결하지 않았다. (서버가 사진을 받는지 확인 필요)
-export async function analyzeSignText(text: string): Promise<SignExplanation> {
-  const data = await apiRequest<SignAnalysisResponse>("/api/signs/analyze", { method: "POST", body: { text } });
+// 서버가 사진을 거부했을 때 던지는 오류.
+// - invalid: JPEG·PNG·WebP 안내문 사진이 아님 (400 INVALID_SIGN_IMAGE)
+// - tooLarge: 사진 크기 제한 초과 (413 SIGN_IMAGE_TOO_LARGE)
+export class SignImageRejectedError extends Error {
+  reason: "invalid" | "tooLarge";
+
+  constructor(reason: "invalid" | "tooLarge", message: string) {
+    super(message);
+    this.name = "SignImageRejectedError";
+    this.reason = reason;
+  }
+}
+
+// 사진 또는 텍스트 중 하나만 보낸다.
+export type AnalyzeSignInput = { photo: File } | { text: string };
+
+// POST /api/signs/analyze
+// - 텍스트: JSON { text } (1~500자)
+// - 사진: multipart { image } (JPEG·PNG·WebP)
+export async function analyzeSign(input: AnalyzeSignInput): Promise<SignExplanation> {
+  let body: FormData | { text: string };
+  if ("photo" in input) {
+    body = new FormData();
+    body.append("image", input.photo);
+  } else {
+    body = { text: input.text };
+  }
+
+  let data: SignAnalysisResponse;
+  try {
+    data = await apiRequest<SignAnalysisResponse>("/api/signs/analyze", { method: "POST", body });
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.code === "INVALID_SIGN_IMAGE") throw new SignImageRejectedError("invalid", e.message);
+      if (e.code === "SIGN_IMAGE_TOO_LARGE" || e.status === 413) throw new SignImageRejectedError("tooLarge", e.message);
+    }
+    throw e;
+  }
 
   if (data.status !== "ok" || data.scanId === null) {
     throw new SignNotRecognizedError(data.status, data.message?.ko && data.message?.en ? data.message : null);
