@@ -13,3 +13,32 @@ export type FeedbackReason = (typeof FEEDBACK_REASONS)[number];
 export type FeedbackResult =
   | { helpful: true }
   | { helpful: false; reasons: FeedbackReason[]; comment?: string };
+
+// 서버가 받는 이유 코드 (reasonTags). 화면 선택지와 순서대로 짝지어 둔다.
+export type FeedbackReasonTag = "WRONG_INFO" | "HARD_TO_UNDERSTAND" | "NOT_MATCH_PLACE" | "OTHER";
+
+const REASON_TAG: Record<FeedbackReason, FeedbackReasonTag> = {
+  "잘못된 정보": "WRONG_INFO",
+  "이해하기 어려움": "HARD_TO_UNDERSTAND",
+  "실제 장소와 다름": "NOT_MATCH_PLACE",
+  기타: "OTHER",
+};
+
+// 피드백 결과 → 서버 요청 본문의 공통 부분 { helpful, reasonTags?, comment? }
+// 도움됨이면 이유를 비워야 해서 helpful만 보낸다. 같은 이유가 두 번 들어가지 않게 한다.
+export function toFeedbackBody(result: FeedbackResult) {
+  if (result.helpful) return { helpful: true };
+  return {
+    helpful: false,
+    reasonTags: [...new Set(result.reasons.map((reason) => REASON_TAG[reason]))],
+    ...(result.comment ? { comment: result.comment } : {}),
+  };
+}
+
+// 이미 피드백을 보낸 답변·해석에 또 보냈을 때 (409 DUPLICATE_RESOURCE)
+export class FeedbackAlreadySentError extends Error {
+  constructor() {
+    super("이미 의견을 보냈어요");
+    this.name = "FeedbackAlreadySentError";
+  }
+}

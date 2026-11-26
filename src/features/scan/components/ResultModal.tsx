@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from "react";
-import { sendScanFeedback } from "../../../api/scan";
+import { hasSentFeedback } from "../../../api/feedbackSent";
+import { sendScanFeedback } from "../../../api/scan/feedback";
 import type { SignExplanation } from "../../../api/scan/types";
 import closeIcon from "../../../assets/scan/x-black.svg";
 import Feedback from "../../../components/Feedback";
@@ -119,7 +120,8 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
 
           <Feedback
             variant="scan"
-            onSend={(feedback) => sendScanFeedback({ scanId: result.id, ...feedback })}
+            onSend={(feedback) => sendScanFeedback(Number(result.id), feedback)}
+            alreadySent={hasSentFeedback("scan", Number(result.id))}
           />
         </div>
       </div>

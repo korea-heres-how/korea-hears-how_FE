@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { sendFeedback } from "../../../api/aichat";
+import { sendAiFeedback } from "../../../api/aichat/feedback";
+import { hasSentFeedback } from "../../../api/feedbackSent";
 import type { AiAnswer } from "../../../api/aichat/types";
 import aiOrange from "../../../assets/all/ai-orange.svg";
 import ban from "../../../assets/aichat/ban.svg";
@@ -89,7 +90,10 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
           </div>
         </div>
 
-        <Feedback onSend={(result) => sendFeedback({ answerId: answer.id, ...result })} />
+        <Feedback
+          onSend={(result) => sendAiFeedback(Number(answer.id), result)}
+          alreadySent={hasSentFeedback("ai", Number(answer.id))}
+        />
       </div>
     </div>
   );

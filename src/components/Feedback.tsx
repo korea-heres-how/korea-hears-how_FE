@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   FEEDBACK_REASONS,
+  FeedbackAlreadySentError,
   type FeedbackReason,
   type FeedbackResult,
 } from "../api/feedback";
@@ -15,31 +16,37 @@ const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
 const COMMENT_MAX = 500;
 
-// idle: 처음 질문 / good: 도움됨 보냄 / form: 도움 안 됨 의견 작성 / bad: 의견 보냄
-type Step = "idle" | "good" | "form" | "bad";
+// idle: 처음 질문 / good: 도움됨 보냄 / form: 도움 안 됨 의견 작성 / bad: 의견 보냄 / already: 이미 보낸 적 있음(409)
+type Step = "idle" | "good" | "form" | "bad" | "already";
 
 type FeedbackProps = {
   // 어디에 보낼지는 화면마다 달라서(AI 답변, 안내문 해석 …) 보내는 함수를 쓰는 쪽에서 넘긴다.
   onSend: (result: FeedbackResult) => Promise<void>;
   // chat: "도움이 되었나요?" 왼쪽 정렬 / scan: "ⓘ 정확했나요?" 가운데 정렬
   variant?: "chat" | "scan";
+  // 이미 피드백을 보낸 답변·해석이면 평가 버튼 대신 "이미 의견을 보냈어요"를 보여준다.
+  alreadySent?: boolean;
 };
 
 // "도움이 되었나요?" 피드백 영역. 도움 안 됨을 누르면 이유와 의견을 받는다.
-export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
+export default function Feedback({ onSend, variant = "chat", alreadySent = false }: FeedbackProps) {
   const t = useT();
   const reasonLabel = useFeedbackReasonLabel();
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<Step>(alreadySent ? "already" : "idle");
   const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
+  // 의견 보내기에 실패했는지 (폼 아래에 안내를 띄운다)
+  const [failed, setFailed] = useState(false);
 
+  // 도움됨은 누르자마자 감사 문구를 보여준다. 이미 보낸 적이 있으면 그 안내로 바꾸고, 그 밖의 실패는 처음 상태로 돌린다.
   const sendHelpful = async () => {
     setStep("good");
     try {
       await onSend({ helpful: true });
     } catch (e) {
       console.error(e);
+      setStep(e instanceof FeedbackAlreadySentError ? "already" : "idle");
     }
   };
 
@@ -56,6 +63,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
     setStep("idle");
     setReasons([]);
     setComment("");
+    setFailed(false);
   };
 
   // 이유를 1개 이상 골라야 보낼 수 있다.
@@ -64,6 +72,7 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
   const submit = async () => {
     if (!canSubmit) return;
     setSending(true);
+    setFailed(false);
     try {
       await onSend({
         helpful: false,
@@ -73,6 +82,8 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
       setStep("bad");
     } catch (e) {
       console.error(e);
+      if (e instanceof FeedbackAlreadySentError) setStep("already");
+      else setFailed(true);
     } finally {
       setSending(false);
     }
@@ -80,6 +91,10 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
 
   if (step === "good") {
     return <Done>{t("도움이 되었다니 다행이에요.", "Glad it helped!")}</Done>;
+  }
+
+  if (step === "already") {
+    return <Done>{t("이미 의견을 보냈어요. 감사합니다.", "You've already sent feedback. Thank you!")}</Done>;
   }
 
   if (step === "bad") {
@@ -138,6 +153,11 @@ export default function Feedback({ onSend, variant = "chat" }: FeedbackProps) {
               {comment.length}/{COMMENT_MAX}
             </span>
             <div className="flex items-center gap-[min(0.5rem,8px)]">
+              {failed && (
+                <span role="alert" className="text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(180,69,58,0.9)]">
+                  {t("보내지 못했어요. 다시 시도해 주세요.", "Couldn't send. Please try again.")}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={cancel}
