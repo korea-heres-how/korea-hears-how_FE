@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { type AiAnswer, sendFeedback } from "../../../api/aichat";
+import { sendFeedback } from "../../../api/aichat";
+import type { AiAnswer } from "../../../api/aichat/types";
 import aiOrange from "../../../assets/all/ai-orange.svg";
 import ban from "../../../assets/aichat/ban.svg";
 import ck from "../../../assets/aichat/ck.svg";
@@ -8,6 +9,7 @@ import look from "../../../assets/aichat/look.svg";
 import translation from "../../../assets/aichat/translation.svg";
 import x from "../../../assets/aichat/x.svg";
 import Feedback from "../../../components/Feedback";
+import PhraseBookmarkButton from "../../../components/PhraseBookmarkButton";
 import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -65,12 +67,16 @@ export default function AnswerCard({ answer }: { answer: AiAnswer }) {
 
         <div className="pt-[min(0.875rem,14px)]">
           <div className="rounded-[min(0.75rem,12px)] border border-[rgba(43,33,24,0.1)] px-[min(0.9375rem,15px)] py-[min(0.8125rem,13px)]">
-            <SectionTitle
-              icon={{ src: translation, w: 12, h: 11 }}
-              label={t("유용한 한국어 표현", "Useful Korean phrase")}
-              labelClassName="text-[rgba(43,33,24,0.45)]"
-              sub={t("Useful Korean phrase", "유용한 한국어 표현")}
-            />
+            <div className="flex items-start justify-between gap-[min(0.5rem,8px)]">
+              <SectionTitle
+                icon={{ src: translation, w: 12, h: 11 }}
+                label={t("유용한 한국어 표현", "Useful Korean phrase")}
+                labelClassName="text-[rgba(43,33,24,0.45)]"
+                sub={t("Useful Korean phrase", "유용한 한국어 표현")}
+              />
+              {/* 오프라인 표현 보관함에 저장 */}
+              <PhraseBookmarkButton phrase={answer.phrase} />
+            </div>
             <p className="pt-[min(0.375rem,6px)] text-[min(1rem,16px)] leading-[min(1.5rem,24px)] text-[#2B2118]">
               {answer.phrase.korean}
             </p>

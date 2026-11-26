@@ -5,7 +5,12 @@ import { useT } from "../../../contexts/language";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
-export default function ChatHeader() {
+type ChatHeaderProps = {
+  onOpenHistory: () => void; // 오른쪽 "지난 대화" 버튼
+  historyDisabled?: boolean; // 답변을 기다리는 동안은 대화방을 바꾸지 못하게 막는다
+};
+
+export default function ChatHeader({ onOpenHistory, historyDisabled = false }: ChatHeaderProps) {
   const navigate = useNavigate();
   const t = useT();
 
@@ -29,7 +34,7 @@ export default function ChatHeader() {
         <span className="flex size-[min(2.5rem,40px)] items-center justify-center rounded-[min(0.875rem,14px)] bg-[#E07A5F]">
           <img src={aiIcon} alt="" style={{ width: size(19), height: size(18) }} />
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-[min(0.96875rem,15.5px)] font-semibold leading-[min(1.2109rem,19.375px)] text-[#2B2118]">
             {t("AI 여행 도우미", "AI travel guide")}
           </h1>
@@ -38,6 +43,29 @@ export default function ChatHeader() {
             {t("AI travel guide", "AI 여행 도우미")}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={onOpenHistory}
+          disabled={historyDisabled}
+          aria-label={t("지난 대화", "Past chats")}
+          className="flex size-[min(2.25rem,36px)] shrink-0 items-center justify-center rounded-full text-[rgba(43,33,24,0.7)] disabled:opacity-40"
+        >
+          {/* 시계 모양 아이콘 (아이콘 파일이 없어서 직접 그림) */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ width: size(20), height: size(20) }}
+            aria-hidden
+          >
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v4h4" />
+            <path d="M12 7.5V12l3 2" />
+          </svg>
+        </button>
       </div>
     </header>
   );
