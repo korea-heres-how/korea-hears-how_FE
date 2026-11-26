@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from "react";
-import { type SignExplanation, sendScanFeedback } from "../../../api/scan";
+import { sendScanFeedback } from "../../../api/scan";
+import type { SignExplanation } from "../../../api/scan/types";
 import closeIcon from "../../../assets/scan/x-black.svg";
 import Feedback from "../../../components/Feedback";
 import PhraseCard from "../../../components/PhraseCard";
@@ -82,7 +83,7 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
                 sub={t("What should you do?", "그래서 어떻게 해야 하나요?")}
               />
               <p className="pt-[min(0.75rem,12px)] text-[min(0.9375rem,15px)] leading-[min(1.5234375rem,24.375px)] font-medium text-[rgba(43,33,24,0.85)]">
-                {result.action}
+                {language === "en" ? result.actionEn : result.action}
               </p>
             </Section>
 
@@ -111,7 +112,7 @@ export default function ResultModal({ result, onClose }: ResultModalProps) {
                 </span>
               </p>
               <p className="pt-[min(0.25rem,4px)] text-[min(0.84375rem,13.5px)] leading-[min(1.16rem,18.563px)] text-[rgba(43,33,24,0.7)]">
-                {result.whereSeen}
+                {language === "en" ? result.whereSeenEn : result.whereSeen}
               </p>
             </div>
           </div>

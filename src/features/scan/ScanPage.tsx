@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { explainSign, type SignExplanation } from "../../api/scan";
+import { analyzeSignText, SignNotRecognizedError } from "../../api/scan/analyze";
+import type { LocalizedText, SignExplanation } from "../../api/scan/types";
 import aiIcon from "../../assets/all/ai.svg";
 import AiButton from "../../components/AiButton";
 import ErrorToast from "../../components/ErrorToast";
@@ -27,13 +28,26 @@ export default function ScanPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [text, setText] = useState("");
   // 팝업 종류만 저장해서, 언어를 바꾸면 문구도 같이 바뀌게 한다.
-  const [toast, setToast] = useState<"" | "onlyOne" | "failed">("");
+  const [toast, setToast] = useState<"" | "onlyOne" | "failed" | "photoSoon" | "notSign">("");
+  // 안내문으로 인식하지 못했을 때 서버가 준 한/영 안내 문구 (없으면 기본 문구)
+  const [notSignMessage, setNotSignMessage] = useState<LocalizedText | null>(null);
   const closeToast = useCallback(() => setToast(""), []);
   const showOnlyOneToast = () => setToast("onlyOne");
-  const toastMessage =
-    toast === "onlyOne"
-      ? t("이미지 또는 텍스트 중 하나만 입력할 수 있어요", "You can enter either an image or text, not both.")
-      : t("해석하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't explain the sign. Please try again in a moment.");
+  const toastMessage = {
+    "": "",
+    onlyOne: t("이미지 또는 텍스트 중 하나만 입력할 수 있어요", "You can enter either an image or text, not both."),
+    failed: t("해석하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't explain the sign. Please try again in a moment."),
+    photoSoon: t(
+      "사진 해석은 준비 중이에요. 안내문 내용을 텍스트로 입력해 주세요.",
+      "Photo scanning is coming soon. Please type the text on the sign.",
+    ),
+    notSign: notSignMessage
+      ? t(notSignMessage.ko, notSignMessage.en)
+      : t(
+          "안내문으로 인식하지 못했어요. 안내문 내용을 다시 확인해 주세요.",
+          "We couldn't recognize this as a sign. Please check the text and try again.",
+        ),
+  }[toast];
 
   const hasPhoto = photo !== null;
   const hasText = text !== "";
@@ -44,12 +58,22 @@ export default function ScanPage() {
 
   const submit = async () => {
     if (!canSubmit) return;
+    // [임시] 사진 해석은 아직 서버에 연결하지 않아서 안내만 띄운다.
+    if (photo) {
+      setToast("photoSoon");
+      return;
+    }
     setExplaining(true);
     try {
-      setResult(await explainSign(photo ? { photo } : { text: text.trim() }));
+      setResult(await analyzeSignText(text.trim()));
     } catch (e) {
       console.error(e);
-      setToast("failed");
+      if (e instanceof SignNotRecognizedError) {
+        setNotSignMessage(e.serverMessage);
+        setToast("notSign");
+      } else {
+        setToast("failed");
+      }
     } finally {
       setExplaining(false);
     }
