@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { login as loginApi } from "../api/auth/login";
+import { logoutApi } from "../api/auth/logout";
 import type { LoginResult } from "../api/auth/types";
 import { setAccessToken, setUnauthorizedHandler } from "../api/client";
 import { AuthContext } from "./auth";
@@ -50,13 +51,21 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  // 로그아웃 버튼. 서버 요청에 지금 토큰을 실은 뒤 바로 앱에서 지워서, 응답을 기다리지 않고 로그인 화면으로 간다.
+  // 서버 요청이 실패해도(인터넷 끊김·이미 무효인 토큰 등) 앱에서는 로그아웃된다.
+  const signOut = useCallback(() => {
+    const request = logoutApi(); // 토큰은 요청을 보내는 순간 헤더에 실리므로 바로 지워도 된다.
+    logout();
+    request.catch((e) => console.warn("[auth] 서버 로그아웃 실패 (앱에서는 로그아웃됨)", e));
+  }, [logout]);
+
   // 토큰이 만료돼서 401이 오면 로그아웃 → RequireAuth가 로그인 화면으로 보낸다.
   useEffect(() => {
     setUnauthorizedHandler(logout);
     return () => setUnauthorizedHandler(null);
   }, [logout]);
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout]);
+  const value = useMemo(() => ({ user, login, logout, signOut }), [user, login, logout, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

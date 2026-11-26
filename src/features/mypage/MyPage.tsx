@@ -35,7 +35,7 @@ const PREVIEW_COUNT = 3;
 export default function MyPage() {
   const navigate = useNavigate();
   const t = useT();
-  const { logout } = useAuth();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const myLocation = useMyLocation();
   // 즐겨찾기는 미리보기 3개의 장소 ID와 전체 개수만 받는다.
@@ -67,7 +67,7 @@ export default function MyPage() {
   }, []);
 
   const handleLogout = () => {
-    logout();
+    signOut(); // POST /api/auth/logout 후 앱에서도 로그인 정보를 지운다
     navigate("/login", { replace: true });
   };
 
