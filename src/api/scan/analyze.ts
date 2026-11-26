@@ -28,6 +28,29 @@ export class SignImageRejectedError extends Error {
   }
 }
 
+// 해석 응답(Detail)을 결과 팝업에 쓰는 형태로 바꾼다. 해석 직후·기록 상세에서 같이 쓴다.
+export function toSignExplanation(data: SignAnalysisResponse, scanId: number): SignExplanation {
+  const id = String(scanId);
+  return {
+    id,
+    title: data.originalText,
+    titleEn: data.englishTranslation,
+    meaning: data.meaning.ko,
+    meaningEn: data.meaning.en,
+    action: data.actionGuide.ko,
+    actionEn: data.actionGuide.en,
+    // 서버 표현에는 ID가 없어서 해석 ID + 순서로 붙인다.
+    // 보관함 저장은 서버가 0·1번째 표현만 받아서, 그 둘에만 저장 정보를 붙인다. (나머지는 북마크 버튼이 숨겨짐)
+    phrases: data.phrases.map((phrase, i) => ({
+      id: `${id}-${i}`,
+      ...phrase,
+      saveTarget: i <= 1 ? { sourceType: "SIGN_SCAN", sourceId: scanId, phraseIndex: i } : undefined,
+    })),
+    whereSeen: data.whereToSee.ko,
+    whereSeenEn: data.whereToSee.en,
+  };
+}
+
 // 사진 또는 텍스트 중 하나만 보낸다.
 export type AnalyzeSignInput = { photo: File } | { text: string };
 
@@ -58,23 +81,5 @@ export async function analyzeSign(input: AnalyzeSignInput): Promise<SignExplanat
     throw new SignNotRecognizedError(data.status, data.message?.ko && data.message?.en ? data.message : null);
   }
 
-  const id = String(data.scanId);
-  return {
-    id,
-    title: data.originalText,
-    titleEn: data.englishTranslation,
-    meaning: data.meaning.ko,
-    meaningEn: data.meaning.en,
-    action: data.actionGuide.ko,
-    actionEn: data.actionGuide.en,
-    // 서버 표현에는 ID가 없어서 해석 ID + 순서로 붙인다.
-    // 보관함 저장은 서버가 0·1번째 표현만 받아서, 그 둘에만 저장 정보를 붙인다. (나머지는 북마크 버튼이 숨겨짐)
-    phrases: data.phrases.map((phrase, i) => ({
-      id: `${id}-${i}`,
-      ...phrase,
-      saveTarget: i <= 1 ? { sourceType: "SIGN_SCAN", sourceId: data.scanId!, phraseIndex: i } : undefined,
-    })),
-    whereSeen: data.whereToSee.ko,
-    whereSeenEn: data.whereToSee.en,
-  };
+  return toSignExplanation(data, data.scanId);
 }

@@ -67,3 +67,34 @@ export type SavedPhrasePage = {
   page: number;
   totalPages: number;
 };
+
+// ---- 스캔한 안내문 (내 해석 기록) ----
+// 기록 카드 한 개
+export type ScannedSign = {
+  scanId: number; // 누르면 이 ID로 상세(GET /api/signs/{scanId})를 연다
+  fromPhoto: boolean; // 사진으로 해석했는지
+  title: string; // 쉬운 설명 한 줄 (서버가 한국어로만 준다)
+  scannedAt: string; // 해석한 시각 (ISO 문자열)
+  imageUrl?: string; // 사진 해석 썸네일. 없으면 기본 이미지
+};
+
+// 기록 목록 한 페이지
+export type ScannedSignPage = {
+  signs: ScannedSign[];
+  total: number;
+  hasMore: boolean;
+};
+
+// GET /api/users/me/signs 응답 data
+export type SignHistoryPageResponse = {
+  items: {
+    scanId: number;
+    sourceType: "TEXT" | "IMAGE";
+    title: string;
+    thumbnailUrl: string | null; // 지금은 사진 해석도 null (서버가 원본 사진을 보관하지 않음)
+    createdAt: string; // 시간대 없는 시각 "2026-11-26T04:11:39.377693"
+  }[];
+  page: number;
+  totalElements: number;
+  totalPages: number;
+};

@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getScannedSigns, type ScannedSign } from "../../api/mypage";
 import { getFavorites } from "../../api/mypage/favorites";
 import { getMe } from "../../api/mypage/me";
-import type { Profile } from "../../api/mypage/types";
+import { getScannedSigns } from "../../api/mypage/signs";
+import type { Profile, ScannedSign } from "../../api/mypage/types";
 import arrowG from "../../assets/mypage/arrow-g.svg";
 import arrowO from "../../assets/mypage/arrow-o.svg";
 import bookmark from "../../assets/mypage/bookmark.svg";
@@ -14,14 +14,17 @@ import mail from "../../assets/mypage/mail.svg";
 import offline from "../../assets/mypage/offline.svg";
 import scan from "../../assets/mypage/scan.svg";
 import AiButton from "../../components/AiButton";
+import ErrorToast from "../../components/ErrorToast";
 import LanguageSelect from "../../components/LanguageSelect";
 import { useAuth } from "../../contexts/auth";
 import { useT } from "../../contexts/language";
 import { useMyLocation } from "../map/components/useMyLocation";
+import ResultModal from "../scan/components/ResultModal";
 import EditProfileModal from "./components/EditProfileModal";
 import PlaceCard from "./components/PlaceCard";
 import ProfileAvatar from "./components/ProfileAvatar";
 import SignCard from "./components/SignCard";
+import { useSignDetail } from "./components/useSignDetail";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
 
@@ -38,7 +41,10 @@ export default function MyPage() {
   // 즐겨찾기는 미리보기 3개의 장소 ID와 전체 개수만 받는다.
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoriteTotal, setFavoriteTotal] = useState(0);
+  // 스캔한 안내문도 미리보기 3개와 전체 개수만 받는다.
   const [signs, setSigns] = useState<ScannedSign[]>([]);
+  const [signTotal, setSignTotal] = useState(0);
+  const signDetail = useSignDetail();
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -52,8 +58,11 @@ export default function MyPage() {
         setFavoriteTotal(result.total);
       })
       .catch((e) => console.error(e));
-    getScannedSigns()
-      .then(setSigns)
+    getScannedSigns(1, PREVIEW_COUNT)
+      .then((result) => {
+        setSigns(result.signs);
+        setSignTotal(result.total);
+      })
       .catch((e) => console.error(e));
   }, []);
 
@@ -113,7 +122,7 @@ export default function MyPage() {
         />
         <StatCard
           icon={scan}
-          count={signs.length}
+          count={signTotal}
           label={t("스캔한 안내문", "Scanned signs")}
           sub={t("Scanned signs", "스캔한 안내문")}
         />
@@ -166,12 +175,17 @@ export default function MyPage() {
       <ListSection
         title={t("스캔한 안내문", "Scanned signs")}
         sub={t("Scanned signs", "스캔한 안내문")}
-        count={signs.length}
+        count={signTotal}
         onViewAll={() => navigate("/mypage/scans")}
         emptyText={t("스캔한 안내문이 없습니다.", "No scanned signs yet.")}
       >
-        {signs.slice(0, PREVIEW_COUNT).map((sign) => (
-          <SignCard key={sign.id} sign={sign} />
+        {signs.map((sign) => (
+          <SignCard
+            key={sign.scanId}
+            sign={sign}
+            onOpen={signDetail.open}
+            opening={signDetail.openingId === sign.scanId}
+          />
         ))}
       </ListSection>
 
@@ -198,6 +212,15 @@ export default function MyPage() {
         여기서는? · Korea, Here's How —{" "}
         {t("한국을 찾은 여행자를 위해 정성껏 만들었습니다.", "Made with care for travelers visiting Korea.")}
       </p>
+
+      {/* 스캔한 안내문 카드를 누르면 그 해석 결과를 다시 띄운다. */}
+      {signDetail.detail && <ResultModal result={signDetail.detail} onClose={signDetail.close} />}
+      {signDetail.failed && (
+        <ErrorToast
+          message={t("해석 결과를 불러오지 못했어요.", "Couldn't open this sign.")}
+          onClose={signDetail.closeError}
+        />
+      )}
 
       {editing && profile && (
         <EditProfileModal
