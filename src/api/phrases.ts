@@ -1,61 +1,36 @@
-import {
-  clearMockSavedPhrases,
-  getMockSavedPhrases,
-  saveMockPhrase,
-  unsaveMockPhrase,
-} from "./mocks/phrases";
-import type { NearbyPlace } from "./map/types";
+// 여러 화면(안내문 해석, 관광지 상세, 오프라인 표현 보관함 등)에서 같이 쓰는 한국어 표현 타입.
+// 저장·삭제·목록 API는 api/mypage/phrases.ts
 
-// 장소 분류 (관광지·문화시설·음식점·시장·카페)
-type PlaceCategory = Exclude<NearbyPlace["category"], "기타">;
+// 표현이 어디서 나왔는지 (서버 sourceType)
+export type PhraseSourceType = "PLACE_GUIDE" | "AI_CHAT" | "SIGN_SCAN";
 
-// 여러 화면(안내문 해석, 관광지 상세 등)에 나오는 "이렇게 말해보세요" 한국어 표현 한 개
+// 서버의 저장 표현 분류
+export type ServerPhraseCategory = "RESTAURANT" | "TRANSPORT" | "SHOPPING" | "ETC";
+
+// 표현을 보관함에 저장할 때 서버에 보내는 출처 정보.
+// 서버가 원본을 찾아 사본을 만들기 때문에, 출처를 알 수 있는 표현만 저장할 수 있다.
+export type PhraseSaveTarget = {
+  sourceType: PhraseSourceType;
+  sourceId: number; // 안내문 해석이면 scanId
+  phraseIndex?: number; // 안내문 해석(SIGN_SCAN)만 필요. 0 또는 1
+  category?: ServerPhraseCategory;
+};
+
+// "이렇게 말해보세요" 한국어 표현 한 개
 export type Phrase = {
-  id: string;
+  id: string; // 화면에서 목록 key로만 쓴다
   korean: string; // 이거 잠깐 맡길 수 있어요?
   romanization: string; // i-geo jam-kkan mat-gil su i-sseo-yo?
   english: string; // Can I leave this here for a moment?
-  saved?: boolean; // 북마크(오프라인 표현 보관함)에 저장했는지
+  saveTarget?: PhraseSaveTarget; // 있으면 북마크로 저장할 수 있다. 없으면 북마크 버튼을 숨긴다.
+  savedPhraseId?: number; // 이미 보관함에 저장된 표현이면 그 ID (해제할 때 쓴다)
 };
 
-// 보관함 분류는 지도 화면 카테고리와 같다. 분류가 없는 표현(안내문 해석 등)은 "기타"로 묶는다.
-export type PhraseCategory = PlaceCategory | "기타";
+// 보관함 분류 칩 값. 서버 분류를 한국어 키로 바꿔 둔다. (영어 표시는 contexts/labels.ts)
+export type PhraseCategory = "음식점" | "교통" | "쇼핑" | "기타";
 
 // 오프라인 표현 보관함에 저장된 표현
 export type SavedPhrase = Phrase & {
-  category?: PlaceCategory; // 어느 분류의 장소에서 저장했는지. 없으면 "기타"
+  savedPhraseId: number;
+  category: PhraseCategory;
 };
-
-// [임시] 서버 연결 전까지는 true. 서버가 준비되면 false로 바꾸고 mocks/phrases.ts를 지운다.
-const USE_MOCK = true;
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-async function request(method: "PUT" | "DELETE", path: string) {
-  const res = await fetch(`${BASE_URL}${path}`, { method });
-  if (!res.ok) throw new Error(`저장하지 못했어요 (${res.status})`);
-}
-
-// 표현을 북마크(나중에 마이페이지 "오프라인 표현 보관함")에 저장한다. 서버(안): PUT /me/phrases/:id
-export function savePhrase(id: string): Promise<void> {
-  return USE_MOCK ? saveMockPhrase(id) : request("PUT", `/me/phrases/${id}`);
-}
-
-// 북마크를 해제한다. 서버(안): DELETE /me/phrases/:id
-export function unsavePhrase(id: string): Promise<void> {
-  return USE_MOCK ? unsaveMockPhrase(id) : request("DELETE", `/me/phrases/${id}`);
-}
-
-// 저장한 표현 목록. 서버(안): GET /me/phrases
-export async function getSavedPhrases(): Promise<SavedPhrase[]> {
-  if (USE_MOCK) return getMockSavedPhrases();
-
-  const res = await fetch(`${BASE_URL}/me/phrases`);
-  if (!res.ok) throw new Error(`불러오지 못했어요 (${res.status})`);
-  return res.json();
-}
-
-// 저장한 표현을 모두 지운다. 서버(안): DELETE /me/phrases
-export function clearSavedPhrases(): Promise<void> {
-  return USE_MOCK ? clearMockSavedPhrases() : request("DELETE", "/me/phrases");
-}

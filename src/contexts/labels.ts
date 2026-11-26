@@ -9,6 +9,8 @@ const CATEGORY_EN: Record<string, string> = {
   음식점: "Restaurants",
   시장: "Markets",
   카페: "Cafés",
+  교통: "Transport",
+  쇼핑: "Shopping",
   기타: "Others",
 };
 

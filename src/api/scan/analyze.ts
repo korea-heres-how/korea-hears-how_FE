@@ -34,7 +34,12 @@ export async function analyzeSignText(text: string): Promise<SignExplanation> {
     action: data.actionGuide.ko,
     actionEn: data.actionGuide.en,
     // 서버 표현에는 ID가 없어서 해석 ID + 순서로 붙인다.
-    phrases: data.phrases.map((phrase, i) => ({ id: `${id}-${i}`, ...phrase })),
+    // 보관함 저장은 서버가 0·1번째 표현만 받아서, 그 둘에만 저장 정보를 붙인다. (나머지는 북마크 버튼이 숨겨짐)
+    phrases: data.phrases.map((phrase, i) => ({
+      id: `${id}-${i}`,
+      ...phrase,
+      saveTarget: i <= 1 ? { sourceType: "SIGN_SCAN", sourceId: data.scanId!, phraseIndex: i } : undefined,
+    })),
     whereSeen: data.whereToSee.ko,
     whereSeenEn: data.whereToSee.en,
   };

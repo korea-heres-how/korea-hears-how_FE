@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { type Phrase, savePhrase, unsavePhrase } from "../api/phrases";
+import type { Phrase } from "../api/phrases";
 import bookmarkIcon from "../assets/scan/bookmark.svg";
 import bookmarkFillIcon from "../assets/scan/bookmark-fill.svg";
 import checkIcon from "../assets/scan/check.svg";
@@ -8,6 +8,13 @@ import showIcon from "../assets/scan/show.svg";
 import soundIcon from "../assets/scan/soundg.svg";
 import soundWhiteIcon from "../assets/scan/soundw.svg";
 import { useT } from "../contexts/language";
+import {
+  addSavedPhrase,
+  ensureSavedPhrasesSynced,
+  findSavedPhraseId,
+  removeSavedPhrase,
+  useSavedPhrases,
+} from "../contexts/savedPhrases";
 import ShowToStaff from "./ShowToStaff";
 
 const size = (px: number) => `min(${px / 16}rem, ${px}px)`;
@@ -20,13 +27,27 @@ const COPIED_MS = 2000;
 // Show to staff: 화면 전체에 크게 띄워 직원에게 보여주기(ShowToStaff)
 type PhraseCardProps = {
   phrase: Phrase;
-  // 북마크 저장/해제가 성공했을 때 알려준다. (오프라인 표현 보관함에서 해제하면 목록에서 빼려고)
-  onSavedChange?: (saved: boolean) => void;
 };
 
-export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
+export default function PhraseCard({ phrase }: PhraseCardProps) {
   const t = useT();
-  const [saved, setSaved] = useState(phrase.saved ?? false);
+  // 출처를 모르는 표현(현장 한국어·AI 채팅 등 아직 미연결)은 저장할 수 없어서 북마크를 숨긴다.
+  const canSave = phrase.saveTarget !== undefined;
+  // 이미 저장한 표현인지는 보관함 저장소에서 찾는다. (같은 출처 → 같은 한국어 문장 순)
+  // 보관함 목록의 표현은 자기 ID 그대로, 이 카드에서 방금 저장했으면 서버가 준 ID를 쓴다.
+  const { phrases: savedPhrases } = useSavedPhrases();
+  const [justSavedId, setJustSavedId] = useState<number>();
+  const justSavedAlive = justSavedId !== undefined && savedPhrases.some((p) => p.savedPhraseId === justSavedId);
+  const savedId =
+    phrase.savedPhraseId ?? (justSavedAlive ? justSavedId : undefined) ?? findSavedPhraseId(savedPhrases, phrase);
+  // 누르자마자 바뀐 모습을 보여주려고, 요청 중에는 이 값을 우선한다.
+  const [pending, setPending] = useState<boolean | null>(null);
+  const saved = pending ?? savedId !== undefined;
+
+  // 이번 접속에서 아직 서버 목록을 안 받았으면 받아 둔다. (그 전에는 기기 저장본으로 표시)
+  useEffect(() => {
+    if (canSave) ensureSavedPhrasesSynced();
+  }, [canSave]);
   const [speaking, setSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showingStaff, setShowingStaff] = useState(false);
@@ -44,15 +65,19 @@ export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
   );
 
   // 누르자마자 바꾸고, 저장에 실패하면 원래대로 되돌린다.
+  // 성공하면 저장소가 바뀌어 표시가 유지되고, 실패하면 저장소 값(원래 상태)으로 돌아간다.
+  // 요청 중에 또 누르면 무시한다. (저장 ID를 받기 전에 해제 요청이 나가지 않게)
   const toggleSaved = async () => {
+    if (pending !== null || !phrase.saveTarget) return;
     const next = !saved;
-    setSaved(next);
+    setPending(next);
     try {
-      await (next ? savePhrase(phrase.id) : unsavePhrase(phrase.id));
-      onSavedChange?.(next);
+      if (next) setJustSavedId(await addSavedPhrase(phrase.saveTarget));
+      else if (savedId !== undefined) await removeSavedPhrase(savedId);
     } catch (e) {
       console.error(e);
-      setSaved(!next);
+    } finally {
+      setPending(null);
     }
   };
 
@@ -102,26 +127,28 @@ export default function PhraseCard({ phrase, onSavedChange }: PhraseCardProps) {
           </p>
         </div>
         <div className="flex shrink-0 gap-[min(0.5rem,8px)]">
-          <CircleButton
-            active={saved}
-            onClick={toggleSaved}
-            label={saved ? t("표현 저장 해제", "Remove from saved") : t("표현 저장", "Save phrase")}
-            pressed={saved}
-          >
-            {saved ? (
-              <img
-                src={bookmarkFillIcon}
-                alt=""
-                style={{ width: size(15), height: size(14) }}
-              />
-            ) : (
-              <img
-                src={bookmarkIcon}
-                alt=""
-                style={{ width: size(11), height: size(13) }}
-              />
-            )}
-          </CircleButton>
+          {canSave && (
+            <CircleButton
+              active={saved}
+              onClick={toggleSaved}
+              label={saved ? t("표현 저장 해제", "Remove from saved") : t("표현 저장", "Save phrase")}
+              pressed={saved}
+            >
+              {saved ? (
+                <img
+                  src={bookmarkFillIcon}
+                  alt=""
+                  style={{ width: size(15), height: size(14) }}
+                />
+              ) : (
+                <img
+                  src={bookmarkIcon}
+                  alt=""
+                  style={{ width: size(11), height: size(13) }}
+                />
+              )}
+            </CircleButton>
+          )}
           <CircleButton active={speaking} onClick={speak} label={t("한국어로 듣기", "Listen in Korean")}>
             <img
               src={speaking ? soundWhiteIcon : soundIcon}

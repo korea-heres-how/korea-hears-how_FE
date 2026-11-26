@@ -1,4 +1,5 @@
 import type { AppLanguage } from "../auth/types";
+import type { PhraseSourceType, ServerPhraseCategory } from "../phrases";
 
 // 마이페이지 프로필에서 쓰는 내 정보
 export type Profile = {
@@ -43,5 +44,26 @@ export type FavoritePageResponse = {
   items: { placeId: string; createdAt: string }[];
   page: number;
   totalElements: number;
+  totalPages: number;
+};
+
+// ---- 저장 표현 (오프라인 표현 보관함) ----
+// GET·POST /api/users/me/phrases 응답의 표현 한 개 (SavedPhraseResponse) 중 쓰는 필드만.
+// (placeId, placeName, audioUrl, savedAt도 오지만 아직 쓰는 화면이 없어서 뺐다)
+export type SavedPhraseResponse = {
+  savedPhraseId: number;
+  sourceType: PhraseSourceType;
+  sourceId: number;
+  phraseIndex: number | null;
+  category: ServerPhraseCategory | null;
+  korean: string;
+  romanization: string;
+  english: string;
+};
+
+// GET /api/users/me/phrases 응답 data (SavedPhrasePage) 중 쓰는 필드만
+export type SavedPhrasePage = {
+  items: SavedPhraseResponse[];
+  page: number;
   totalPages: number;
 };
