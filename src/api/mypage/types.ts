@@ -1,3 +1,5 @@
+import type { AppLanguage } from "../auth/types";
+
 // 마이페이지 프로필에서 쓰는 내 정보
 export type Profile = {
   name: string;
@@ -14,4 +16,15 @@ export type MyProfileResponse = {
   name: string;
   // 새로 올린 사진은 "/api/profile-images/{uuid}.png" 상대경로, 예전 외부 사진은 전체 URL, 없으면 null
   profileImageUrl: string | null;
+};
+
+// PATCH /api/users/me 요청 본문. 바꿀 값만 보낸다(생략하면 서버 값 유지). 최소 하나는 있어야 한다.
+export type UpdateMeBody = {
+  name?: string; // 1~20자, 공백만으로는 안 됨
+  appLanguage?: AppLanguage;
+};
+
+// POST /api/users/me/profile-image 응답 data
+export type ProfileImageResponse = {
+  profileImageUrl: string; // "/api/profile-images/{uuid}.png" 상대경로
 };

@@ -1,6 +1,8 @@
 import { type ChangeEvent, type InputHTMLAttributes, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { deleteAccount, updateProfile } from "../../../api/mypage";
+import { ApiError } from "../../../api/client";
+import { deleteAccount } from "../../../api/mypage";
+import { deleteProfileImage, updateMe, uploadProfileImage } from "../../../api/mypage/me";
 import type { Profile } from "../../../api/mypage/types";
 import arrowG from "../../../assets/mypage/arrow-g.svg";
 import deleteAccountIcon from "../../../assets/mypage/delete-account.svg";
@@ -29,19 +31,26 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
   const [name, setName] = useState(profile.name);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>();
+  // '삭제'를 눌러 지금 사진을 지우기로 했는지 (저장할 때 서버에서 지운다)
+  const [removingPhoto, setRemovingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // 팝업 종류만 저장해서, 언어를 바꾸면 문구도 같이 바뀌게 한다.
-  const [toast, setToast] = useState<"" | "save" | "delete">("");
+  const [toast, setToast] = useState<"" | "save" | "photo" | "delete">("");
   const closeToast = useCallback(() => setToast(""), []);
   const toastMessage =
     toast === "save"
       ? t("저장하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't save. Please try again in a moment.")
-      : t(
-          "탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.",
-          "Couldn't delete your account. Please try again in a moment.",
-        );
+      : toast === "photo"
+        ? t(
+            "사진을 올리지 못했어요. 2MB 이하의 JPG·PNG 사진으로 다시 골라 주세요.",
+            "Couldn't upload the photo. Please choose a JPG or PNG under 2MB.",
+          )
+        : t(
+            "탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.",
+            "Couldn't delete your account. Please try again in a moment.",
+          );
   const photoInput = useRef<HTMLInputElement>(null);
 
   // 미리보기 주소는 다른 사진을 고르거나 팝업을 닫으면 해제한다.
@@ -62,7 +71,9 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
     };
   }, []);
 
-  const changed = name !== profile.name || photo !== null;
+  // 팝업에 보이는 사진: 새로 고른 사진 → (삭제를 누르지 않았다면) 지금 사진 → 없으면 기본 아이콘
+  const shownPhoto = photoPreview ?? (removingPhoto ? undefined : profile.imageUrl);
+  const changed = name !== profile.name || photo !== null || (removingPhoto && profile.imageUrl !== undefined);
   const canSave = changed && name.trim() !== "" && !saving;
 
   const choosePhoto = (e: ChangeEvent<HTMLInputElement>) => {
@@ -73,17 +84,48 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
     previewRef.current = URL.createObjectURL(file);
     setPhoto(file);
     setPhotoPreview(previewRef.current);
+    setRemovingPhoto(false);
   };
 
+  // 사진 '삭제': 새로 고른 사진도 지우고 기본 아이콘으로 바꿔 보여준다. 서버에는 저장할 때 반영한다.
+  const removePhoto = () => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = undefined;
+    setPhoto(null);
+    setPhotoPreview(undefined);
+    setRemovingPhoto(true);
+  };
+
+  // 이름은 PATCH /api/users/me, 사진 변경은 POST·삭제는 DELETE /api/users/me/profile-image로 바뀐 것만 따로 보낸다.
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
+    const trimmed = name.trim();
+    let step: "name" | "photo" = "name";
     try {
-      const saved = await updateProfile({ name: name.trim(), photo: photo ?? undefined });
+      let saved: Pick<Profile, "name" | "imageUrl"> = {
+        name: profile.name,
+        imageUrl: profile.imageUrl,
+      };
+      if (trimmed !== profile.name) {
+        const updated = await updateMe({ name: trimmed });
+        saved = { name: updated.name, imageUrl: updated.imageUrl };
+      }
+      if (photo) {
+        step = "photo";
+        saved = { ...saved, imageUrl: await uploadProfileImage(photo) };
+      } else if (removingPhoto && profile.imageUrl) {
+        step = "photo";
+        await deleteProfileImage();
+        saved = { ...saved, imageUrl: undefined };
+      }
       onSaved(saved);
     } catch (e) {
       console.error(e);
-      setToast("save");
+      // 사진이 형식·용량·크기 때문에 거부되면(400/413) 사진 안내를 띄운다.
+      const photoRejected =
+        step === "photo" && photo !== null && e instanceof ApiError && (e.status === 400 || e.status === 413);
+      setToast(photoRejected ? "photo" : "save");
       setSaving(false);
     }
   };
@@ -136,16 +178,28 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
         <div className="overflow-y-auto p-[min(1.25rem,20px)]">
           {/* 사진 */}
           <div className="flex items-center gap-[min(1rem,16px)]">
-            <ProfileAvatar src={photoPreview ?? profile.imageUrl} />
+            <ProfileAvatar src={shownPhoto} />
             <div>
-              <button
-                type="button"
-                onClick={() => photoInput.current?.click()}
-                className="flex h-[min(2.34375rem,37.5px)] items-center gap-[min(0.375rem,6px)] rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.1)] px-[min(0.75rem,12px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-medium text-[#2B2118]"
-              >
-                <img src={photoIcon} alt="" style={{ width: size(14), height: size(13) }} />
-                {t("사진 변경", "Change photo")}
-              </button>
+              <div className="flex items-center gap-[min(0.5rem,8px)]">
+                <button
+                  type="button"
+                  onClick={() => photoInput.current?.click()}
+                  className="flex h-[min(2.34375rem,37.5px)] items-center gap-[min(0.375rem,6px)] rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.1)] px-[min(0.75rem,12px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-medium text-[#2B2118]"
+                >
+                  <img src={photoIcon} alt="" style={{ width: size(14), height: size(13) }} />
+                  {t("사진 변경", "Change photo")}
+                </button>
+                {/* 사진이 있을 때만 보인다 */}
+                {shownPhoto && (
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="flex h-[min(2.34375rem,37.5px)] items-center rounded-[min(0.5rem,8px)] border border-[rgba(43,33,24,0.1)] px-[min(0.75rem,12px)] text-[min(0.8125rem,13px)] leading-[min(1.21875rem,19.5px)] font-medium text-[rgba(180,69,58,0.9)]"
+                  >
+                    {t("삭제", "Remove")}
+                  </button>
+                )}
+              </div>
               <p className="pt-[min(0.375rem,6px)] text-[min(0.6875rem,11px)] leading-[min(1.03125rem,16.5px)] text-[rgba(43,33,24,0.4)]">
                 {t("JPG · PNG, 정사각형 권장", "JPG · PNG, square recommended")}
               </p>
@@ -155,7 +209,12 @@ export default function EditProfileModal({ profile, onClose, onSaved }: EditProf
 
           {/* 입력칸 */}
           <div className="flex flex-col gap-[min(0.875rem,14px)] pt-[min(1.25rem,20px)]">
-            <Field label={t("이름 · Name", "Name")} value={name} onChange={(e) => setName(e.target.value)} />
+            <Field
+              label={t("이름 · Name", "Name")}
+              value={name}
+              maxLength={20} // 서버 제한 20자
+              onChange={(e) => setName(e.target.value)}
+            />
             <Field label={t("이메일 · Email", "Email")} value={profile.email} readOnly />
           </div>
 

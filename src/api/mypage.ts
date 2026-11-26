@@ -4,16 +4,9 @@ import {
   getMockFavorites,
   getMockScannedSigns,
   removeMockFavorite,
-  updateMockProfile,
 } from "./mocks/mypage";
-import type { Profile } from "./mypage/types";
 
 // 서버가 내려줄 값들 (백엔드와 필드 확정 전)
-// 프로필 수정에서 보내는 값. 사진은 새로 고른 경우에만 보낸다.
-export type ProfileUpdate = {
-  name: string;
-  photo?: File;
-};
 
 export type FavoritePlace = {
   id: string;
@@ -54,18 +47,7 @@ export function getScannedSigns(): Promise<ScannedSign[]> {
   return USE_MOCK ? getMockScannedSigns() : get("/me/scans");
 }
 
-// 프로필을 수정하고, 바뀐 이름·사진을 돌려받는다. (내 정보 조회는 api/mypage/me.ts) 서버(안): PATCH /me (multipart: name, photo)
-export async function updateProfile(update: ProfileUpdate): Promise<Pick<Profile, "name" | "imageUrl">> {
-  if (USE_MOCK) return updateMockProfile(update);
-
-  const body = new FormData();
-  body.append("name", update.name);
-  if (update.photo) body.append("photo", update.photo);
-
-  const res = await fetch(`${BASE_URL}/me`, { method: "PATCH", body });
-  if (!res.ok) throw new Error(`저장하지 못했어요 (${res.status})`);
-  return res.json();
-}
+// 내 정보 조회·수정·사진 변경은 api/mypage/me.ts (서버 연결됨)
 
 // 회원 탈퇴. 서버(안): DELETE /me
 export async function deleteAccount(): Promise<void> {

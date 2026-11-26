@@ -43,6 +43,11 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+// 지금 로그인한 상태(토큰이 있음)인지
+export function hasAccessToken() {
+  return accessToken !== null;
+}
+
 // 로그인한 상태에서 401이 오면 부를 함수 (AuthProvider가 로그아웃을 등록한다)
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;

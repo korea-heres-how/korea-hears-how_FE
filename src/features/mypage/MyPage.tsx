@@ -196,8 +196,8 @@ export default function MyPage() {
           profile={profile}
           onClose={() => setEditing(false)}
           onSaved={(saved) => {
-            // 수정 결과는 이름·사진만 오므로 이메일은 서버에서 받은 값을 그대로 둔다.
-            setProfile((prev) => prev && { ...prev, name: saved.name, imageUrl: saved.imageUrl ?? prev.imageUrl });
+            // 수정 결과는 이름·사진만 오므로 이메일은 서버에서 받은 값을 그대로 둔다. (사진을 지웠으면 imageUrl이 비어서 옴)
+            setProfile((prev) => prev && { ...prev, name: saved.name, imageUrl: saved.imageUrl });
             setEditing(false);
           }}
         />
