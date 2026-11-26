@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { type FavoritePlace, getFavorites, getScannedSigns, type ScannedSign } from "../../api/mypage";
+import { getScannedSigns, type ScannedSign } from "../../api/mypage";
+import { getFavorites } from "../../api/mypage/favorites";
 import { getMe } from "../../api/mypage/me";
 import type { Profile } from "../../api/mypage/types";
 import arrowG from "../../assets/mypage/arrow-g.svg";
@@ -16,6 +17,7 @@ import AiButton from "../../components/AiButton";
 import LanguageSelect from "../../components/LanguageSelect";
 import { useAuth } from "../../contexts/auth";
 import { useT } from "../../contexts/language";
+import { useMyLocation } from "../map/components/useMyLocation";
 import EditProfileModal from "./components/EditProfileModal";
 import PlaceCard from "./components/PlaceCard";
 import ProfileAvatar from "./components/ProfileAvatar";
@@ -32,20 +34,26 @@ export default function MyPage() {
   const t = useT();
   const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [favorites, setFavorites] = useState<FavoritePlace[]>([]);
+  const myLocation = useMyLocation();
+  // 즐겨찾기는 미리보기 3개의 장소 ID와 전체 개수만 받는다.
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteTotal, setFavoriteTotal] = useState(0);
   const [signs, setSigns] = useState<ScannedSign[]>([]);
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    // 내 정보는 서버, 즐겨찾기·스캔 목록은 아직 mock이라 따로 불러서 한쪽이 실패해도 다른 쪽은 보이게 한다.
+    // 내 정보·즐겨찾기·스캔 목록을 따로 불러서 한쪽이 실패해도 다른 쪽은 보이게 한다.
     getMe()
       .then(setProfile)
       .catch((e) => console.error(e));
-    Promise.all([getFavorites(), getScannedSigns()])
-      .then(([favoritesResult, signsResult]) => {
-        setFavorites(favoritesResult);
-        setSigns(signsResult);
+    getFavorites(1, PREVIEW_COUNT)
+      .then((result) => {
+        setFavoriteIds(result.placeIds);
+        setFavoriteTotal(result.total);
       })
+      .catch((e) => console.error(e));
+    getScannedSigns()
+      .then(setSigns)
       .catch((e) => console.error(e));
   }, []);
 
@@ -99,7 +107,7 @@ export default function MyPage() {
       <div className="grid grid-cols-2 gap-[min(0.625rem,10px)] pt-[min(1rem,16px)]">
         <StatCard
           icon={bookmark}
-          count={favorites.length}
+          count={favoriteTotal}
           label={t("즐겨찾기", "Favorites")}
           sub={t("Favorites", "즐겨찾기")}
         />
@@ -145,12 +153,12 @@ export default function MyPage() {
       <ListSection
         title={t("즐겨찾기", "Favorites")}
         sub={t("Favorites", "즐겨찾기")}
-        count={favorites.length}
+        count={favoriteTotal}
         onViewAll={() => navigate("/mypage/favorites")}
         emptyText={t("즐겨찾기한 장소가 없습니다.", "No favorite places yet.")}
       >
-        {favorites.slice(0, PREVIEW_COUNT).map((place) => (
-          <PlaceCard key={place.id} place={place} />
+        {favoriteIds.map((placeId) => (
+          <PlaceCard key={placeId} placeId={placeId} myLocation={myLocation} />
         ))}
       </ListSection>
 

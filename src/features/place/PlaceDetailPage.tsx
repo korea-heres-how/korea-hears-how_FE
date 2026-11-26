@@ -1,6 +1,6 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { addFavorite, removeFavorite } from "../../api/mypage";
+import { addFavorite, isFavorite, removeFavorite } from "../../api/mypage/favorites";
 import { getPlaceThumbnail } from "../../api/map/images";
 import { getPlaceDetail } from "../../api/place/detail";
 import type { PlaceDetail } from "../../api/place/types";
@@ -47,8 +47,10 @@ export default function PlaceDetailPage() {
   const [imageUrl, setImageUrl] = useState<string>();
   const [failed, setFailed] = useState(false);
   const [tab, setTab] = useState<Tab>("guide");
-  // [임시] 상세 API에는 즐겨찾기 여부가 없어서 항상 꺼진 상태로 시작한다. (즐겨찾기 API 연동 때 채운다)
+  // 상세 API에는 즐겨찾기 여부가 없어서, 꺼진 상태로 시작했다가 내 즐겨찾기 목록에서 찾으면 켠다.
   const [favorite, setFavorite] = useState(false);
+  // 목록 확인이 끝나기 전에 사용자가 이미 눌렀으면, 늦게 온 확인 결과로 덮어쓰지 않는다.
+  const favoriteTouchedRef = useRef(false);
 
   // 목록을 내려본 상태에서 들어와도 맨 위부터 보이게 한다.
   useEffect(() => {
@@ -70,6 +72,19 @@ export default function PlaceDetailPage() {
       cancelled = true;
     };
   }, [id, language]);
+
+  useEffect(() => {
+    let cancelled = false;
+    favoriteTouchedRef.current = false;
+    isFavorite(id)
+      .then((result) => {
+        if (!cancelled && !favoriteTouchedRef.current) setFavorite(result);
+      })
+      .catch((e) => console.warn(e));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // 사진은 지도 카드에서 이미 받았으면 그대로 쓴다. (장소별로 기억해 둠)
   useEffect(() => {
@@ -97,6 +112,7 @@ export default function PlaceDetailPage() {
   // 누르자마자 바꾸고, 저장에 실패하면 원래대로 되돌린다.
   const toggleFavorite = async () => {
     const next = !favorite;
+    favoriteTouchedRef.current = true;
     setFavorite(next);
     try {
       await (next ? addFavorite(id) : removeFavorite(id));

@@ -28,3 +28,20 @@ export type UpdateMeBody = {
 export type ProfileImageResponse = {
   profileImageUrl: string; // "/api/profile-images/{uuid}.png" 상대경로
 };
+
+// ---- 즐겨찾기 ----
+// 즐겨찾기 목록 한 페이지. 서버는 장소 ID만 주므로 이름·분류·사진은 카드가 따로 불러온다.
+export type FavoritePage = {
+  placeIds: string[]; // 최근 저장순
+  total: number; // 전체 즐겨찾기 개수
+  hasMore: boolean; // 다음 페이지가 있는지
+};
+
+// GET /api/users/me/favorites 응답 data (FavoritePageResponse) 중 쓰는 필드만.
+// 항목의 name/imageUrl/address는 서버가 항상 null로 줘서 적지 않는다.
+export type FavoritePageResponse = {
+  items: { placeId: string; createdAt: string }[];
+  page: number;
+  totalElements: number;
+  totalPages: number;
+};
